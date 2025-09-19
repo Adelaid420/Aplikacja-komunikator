@@ -257,6 +257,17 @@ button:not(:disabled):hover {
   height: 20px;
 }
 
+.auto-connect {
+  margin-top: 4px;
+}
+
+.form-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: -4px 0 12px;
+  line-height: 1.4;
+}
+
 .conversation-column {
   display: flex;
   flex-direction: column;

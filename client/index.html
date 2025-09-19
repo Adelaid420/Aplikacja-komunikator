@@ -32,23 +32,28 @@
                 type="text"
                 id="server-url"
                 name="serverUrl"
-                value="ws://localhost:8080"
+                placeholder="wss://aplikacja-komunikator.onrender.com"
                 required
                 spellcheck="false"
               />
             </label>
             <label class="field">
               <span>ID pary</span>
-              <input type="text" id="pair-id" name="pairId" value="my-pair" required spellcheck="false" />
+              <input type="text" id="pair-id" name="pairId" required spellcheck="false" placeholder="np. my-pair" />
             </label>
             <label class="field">
               <span>Twoje ID</span>
-              <input type="text" id="user-id" name="userId" value="ja" required spellcheck="false" />
+              <input type="text" id="user-id" name="userId" required spellcheck="false" placeholder="np. ja" />
             </label>
             <label class="field">
               <span>Imię partnerki</span>
-              <input type="text" id="partner-name" name="partnerName" value="Ania" />
+              <input type="text" id="partner-name" name="partnerName" placeholder="np. Ania" />
             </label>
+            <label class="toggle auto-connect">
+              <input type="checkbox" id="auto-connect" />
+              <span>Łącz automatycznie przy uruchomieniu</span>
+            </label>
+            <p class="form-hint">Dane połączenia zapisują się lokalnie i przy następnym starcie okno Miku połączy się samo.</p>
             <button type="submit" class="primary" id="connect-button">Połącz</button>
           </form>
           <section class="form-section voice-section">

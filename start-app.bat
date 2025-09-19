@@ -11,7 +11,7 @@ if not exist node_modules (
   call npm install || goto :error
 )
 
-call npm run start
+call npm run start:render
 if errorlevel 1 goto :error
 
 goto :eof

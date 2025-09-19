@@ -27,7 +27,9 @@ Repozytorium zawiera dokumentację wstępną komunikatora, który pozwala na nat
 1. **Mac / Linux** – kliknij `start-app.command` (lub w terminalu uruchom `./start-app.sh`).
 2. **Windows** – kliknij `start-app.bat`.
 
-Skrypt samodzielnie zainstaluje zależności (`server/`, `client/`, `desktop/`), uruchomi most WebSocket na porcie `8080`, włączy Vite'a dla widżetu oraz otworzy okno Electron z panelem Miku. Zamknięcie okna lub procesów w terminalu zatrzymuje cały prototyp.
+Skrypt samodzielnie zainstaluje zależności (`server/`, `client/`, `desktop/`), uruchomi Vite'a dla widżetu, otworzy okno Electron i ustawi domyślny adres mostu WebSocket na `wss://aplikacja-komunikator.onrender.com`. Dzięki temu po wpisaniu pary i swojego ID oraz zaznaczeniu opcji **„Łącz automatycznie”** komunikator po kolejnych uruchomieniach sam przywróci połączenie z backendem na Renderze.
+
+> Jeśli chcesz wrócić do w pełni lokalnego trybu (z prototypowym serwerem WebSocket na `localhost:8080`), użyj `npm run start` lub `npm run dev` z terminala.
 
 > Nadal możesz korzystać z wersji przeglądarkowej – uruchom `npm run dev:web`, aby otworzyć widżet w przeglądarce tak jak dotychczas.
 
@@ -40,6 +42,9 @@ Folder `desktop/` zawiera konfigurację Electron + electron-builder. Dzięki tem
 ```bash
 npm run setup     # jednorazowo, instaluje zależności wszystkich modułów
 npm run dev       # startuje server + client + electron w trybie watch
+
+# wariant z gotowym backendem na Renderze (bez lokalnego serwera)
+npm run start:render
 ```
 
 ### Budowanie instalatora `.exe`
@@ -54,7 +59,9 @@ npm run build:desktop
 
 Po zakończeniu procesu instalator znajdziesz w `desktop/release/Komunikator-<wersja>-Setup.exe`. Analogiczne artefakty powstaną dla macOS (`.dmg`) oraz Linuxa (`.AppImage`, `.deb`).
 
-> Domyślny adres serwera (`ws://localhost:8080`) i identyfikatory możesz nadpisać zmiennymi środowiskowymi przed uruchomieniem Electron, np. `MIKU_SERVER_URL=wss://twoj-serwer.example npm run dev`.
+> Domyślny adres serwera (`wss://aplikacja-komunikator.onrender.com`) możesz nadpisać zmiennymi środowiskowymi przed uruchomieniem Electron, np. `MIKU_SERVER_URL=wss://twoj-serwer.example npm run start:render`.
+
+> W oknie Miku znajdziesz przełącznik **„Łącz automatycznie przy uruchomieniu”**. Dane logowania (adres, ID pary, Twoje ID i imię partnerki) zapisują się lokalnie, więc przy następnym kliknięciu `Komunikator.exe` aplikacja połączy się sama.
 
 > Zatrzymanie aplikacji następuje po zamknięciu terminala lub wciśnięciu `Ctrl + C` w oknie z uruchomionymi procesami.
 

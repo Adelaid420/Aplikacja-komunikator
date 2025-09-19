@@ -8,6 +8,7 @@ const partnerNameInput = document.getElementById('partner-name');
 const serverUrlInput = document.getElementById('server-url');
 const pairIdInput = document.getElementById('pair-id');
 const userIdInput = document.getElementById('user-id');
+const autoConnectToggle = document.getElementById('auto-connect');
 const timelineEl = document.getElementById('timeline');
 const messageForm = document.getElementById('message-form');
 const messageInput = document.getElementById('message-input');
@@ -24,19 +25,74 @@ const voiceSelect = document.getElementById('voice-select');
 const voiceSupportLabel = document.getElementById('voice-support');
 const testVoiceButton = document.getElementById('test-voice');
 
+const STORAGE_KEY = 'komunikator-settings';
 const appDefaults = window.komunikator?.defaults ?? {};
-if (appDefaults.serverUrl) {
-  serverUrlInput.value = appDefaults.serverUrl;
+
+function loadStoredSettings() {
+  if (!('localStorage' in window)) {
+    return {};
+  }
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    console.warn('Nie udało się odczytać zapamiętanych ustawień', error);
+    return {};
+  }
 }
-if (appDefaults.pairId) {
-  pairIdInput.value = appDefaults.pairId;
+
+function gatherCurrentSettings(overrides = {}) {
+  return {
+    serverUrl: serverUrlInput.value.trim(),
+    pairId: pairIdInput.value.trim(),
+    userId: userIdInput.value.trim(),
+    partnerName: partnerNameInput.value.trim(),
+    autoConnect: autoConnectToggle.checked,
+    ...overrides
+  };
 }
-if (appDefaults.userId) {
-  userIdInput.value = appDefaults.userId;
+
+function persistSettings(overrides = {}) {
+  if (!('localStorage' in window)) {
+    return gatherCurrentSettings(overrides);
+  }
+  const next = gatherCurrentSettings(overrides);
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch (error) {
+    console.warn('Nie udało się zapisać ustawień', error);
+  }
+  return next;
 }
-if (appDefaults.partnerName) {
-  partnerNameInput.value = appDefaults.partnerName;
+
+const storedSettings = loadStoredSettings();
+const fallbackServerUrl = appDefaults.serverUrl
+  ?? (window.location.hostname === 'localhost' || window.location.hostname === ''
+    ? 'ws://localhost:8080'
+    : 'wss://aplikacja-komunikator.onrender.com');
+const initialSettings = {
+  serverUrl: storedSettings.serverUrl ?? fallbackServerUrl,
+  pairId: storedSettings.pairId ?? appDefaults.pairId ?? '',
+  userId: storedSettings.userId ?? appDefaults.userId ?? '',
+  partnerName: storedSettings.partnerName ?? appDefaults.partnerName ?? '',
+  autoConnect: storedSettings.autoConnect ?? appDefaults.autoConnect ?? false
+};
+
+if (initialSettings.serverUrl) {
+  serverUrlInput.value = initialSettings.serverUrl;
 }
+if (initialSettings.pairId) {
+  pairIdInput.value = initialSettings.pairId;
+}
+if (initialSettings.userId) {
+  userIdInput.value = initialSettings.userId;
+}
+if (initialSettings.partnerName) {
+  partnerNameInput.value = initialSettings.partnerName;
+}
+autoConnectToggle.checked = initialSettings.autoConnect;
+const shouldAutoConnect = initialSettings.autoConnect
+  && Boolean(initialSettings.serverUrl && initialSettings.pairId && initialSettings.userId);
 
 let socket = null;
 let connectionState = 'disconnected';
@@ -456,6 +512,8 @@ function connect() {
     return;
   }
 
+  persistSettings();
+
   if (socket) {
     socket.close();
   }
@@ -494,6 +552,26 @@ function connect() {
   });
 }
 
+[serverUrlInput, pairIdInput, userIdInput, partnerNameInput].forEach((input) => {
+  input.addEventListener('change', () => {
+    persistSettings();
+  });
+  input.addEventListener('blur', () => {
+    persistSettings();
+  });
+});
+
+autoConnectToggle.addEventListener('change', () => {
+  const next = persistSettings({ autoConnect: autoConnectToggle.checked });
+  if (autoConnectToggle.checked) {
+    if (next.serverUrl && next.pairId && next.userId) {
+      renderSystemEvent('Automatyczne łączenie włączone – przy następnym starcie połączę się sama.');
+    } else {
+      renderSystemEvent('Włączono automatyczne łączenie, uzupełnij jednak dane połączenia.');
+    }
+  }
+});
+
 connectionForm.addEventListener('submit', (event) => {
   event.preventDefault();
   if (connectionState === 'connected') {
@@ -502,6 +580,13 @@ connectionForm.addEventListener('submit', (event) => {
     connect();
   }
 });
+
+if (shouldAutoConnect) {
+  setTimeout(() => {
+    renderSystemEvent('Przywracam ostatnie połączenie z Miku…');
+    connect();
+  }, 250);
+}
 
 messageForm.addEventListener('submit', (event) => {
   event.preventDefault();
