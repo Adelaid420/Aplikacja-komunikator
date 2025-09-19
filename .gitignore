@@ -11,3 +11,7 @@ client/.vite/
 
 # Logs
 server/npm-debug.log*
+
+desktop/node_modules/
+desktop/renderer/
+desktop/release/

@@ -24,6 +24,20 @@ const voiceSelect = document.getElementById('voice-select');
 const voiceSupportLabel = document.getElementById('voice-support');
 const testVoiceButton = document.getElementById('test-voice');
 
+const appDefaults = window.komunikator?.defaults ?? {};
+if (appDefaults.serverUrl) {
+  serverUrlInput.value = appDefaults.serverUrl;
+}
+if (appDefaults.pairId) {
+  pairIdInput.value = appDefaults.pairId;
+}
+if (appDefaults.userId) {
+  userIdInput.value = appDefaults.userId;
+}
+if (appDefaults.partnerName) {
+  partnerNameInput.value = appDefaults.partnerName;
+}
+
 let socket = null;
 let connectionState = 'disconnected';
 let partnerOnline = false;
