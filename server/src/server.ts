@@ -27,7 +27,10 @@ type PairId = string;
 type UserId = string;
 type PairSockets = Map<UserId, WebSocket>;
 
+type DeliverableMessage = Extract<OutboundMessage, { type: 'text' | 'alarm' }>;
+
 const activePairs = new Map<PairId, PairSockets>();
+const pendingQueues = new Map<PairId, DeliverableMessage[]>();
 
 function getOrCreatePair(pairId: PairId): PairSockets {
   let sockets = activePairs.get(pairId);
@@ -88,6 +91,48 @@ function cleanupSocket(pairId: PairId, userId: UserId): void {
   }
 }
 
+function enqueuePendingMessage(pairId: PairId, message: DeliverableMessage): void {
+  const queue = pendingQueues.get(pairId);
+  if (queue) {
+    queue.push(message);
+    return;
+  }
+  pendingQueues.set(pairId, [message]);
+}
+
+function flushPendingMessages(pairId: PairId, userId: UserId): number {
+  const queue = pendingQueues.get(pairId);
+  if (!queue?.length) {
+    return 0;
+  }
+
+  const sockets = activePairs.get(pairId);
+  const recipient = sockets?.get(userId);
+  if (!recipient || recipient.readyState !== WebSocket.OPEN) {
+    return 0;
+  }
+
+  const remaining: DeliverableMessage[] = [];
+  let delivered = 0;
+
+  for (const message of queue) {
+    if (message.from === userId) {
+      remaining.push(message);
+      continue;
+    }
+    sendJson(recipient, message);
+    delivered += 1;
+  }
+
+  if (remaining.length > 0) {
+    pendingQueues.set(pairId, remaining);
+  } else {
+    pendingQueues.delete(pairId);
+  }
+
+  return delivered;
+}
+
 const wss = new WebSocketServer({ server: httpServer });
 
 wss.on('connection', (socket, req) => {
@@ -111,6 +156,16 @@ wss.on('connection', (socket, req) => {
     partnerOnline
   });
 
+  const flushed = flushPendingMessages(pairId, userId);
+  if (flushed > 0) {
+    sendJson(socket, {
+      type: 'system',
+      event: 'queue_flushed',
+      pairId,
+      delivered: flushed
+    });
+  }
+
   socket.on('message', (data) => {
     const parsedJson = typeof data === 'string' ? safeParseJson(data) : safeParseJson(data.toString());
     if (parsedJson === undefined) {
@@ -129,18 +184,25 @@ wss.on('connection', (socket, req) => {
 
     switch (message.type) {
       case 'text': {
+        const messageId = message.id ?? createMessageId();
         const outbound: OutboundMessage = {
           type: 'text',
           from: userId,
           content: message.content,
-          id: message.id ?? createMessageId(),
+          id: messageId,
           timestamp
         };
         const delivered = notifyPartner(pairId, userId, outbound);
+        sendJson(socket, outbound);
         if (!delivered) {
-          sendJson(socket, { type: 'error', message: 'Partner is offline. Message queued locally.' });
-        } else {
-          sendJson(socket, outbound);
+          enqueuePendingMessage(pairId, outbound);
+          sendJson(socket, {
+            type: 'system',
+            event: 'queued',
+            pairId,
+            messageId,
+            reason: 'partner_offline'
+          });
         }
         break;
       }
@@ -154,7 +216,13 @@ wss.on('connection', (socket, req) => {
         };
         const delivered = notifyPartner(pairId, userId, outbound);
         if (!delivered) {
-          sendJson(socket, { type: 'error', message: 'Partner is offline. Alarm not delivered.' });
+          enqueuePendingMessage(pairId, outbound);
+          sendJson(socket, {
+            type: 'system',
+            event: 'queued',
+            pairId,
+            reason: 'partner_offline'
+          });
         }
         break;
       }

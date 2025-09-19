@@ -27,11 +27,35 @@ export const inboundMessageSchema = z.discriminatedUnion('type', [
 export type ConnectionParams = z.infer<typeof connectionParamsSchema>;
 export type InboundMessage = z.infer<typeof inboundMessageSchema>;
 
+type SystemConnectedMessage = {
+  type: 'system';
+  event: 'connected';
+  pairId: string;
+  partnerOnline: boolean;
+};
+
+type SystemQueuedMessage = {
+  type: 'system';
+  event: 'queued';
+  pairId: string;
+  messageId?: string;
+  reason: 'partner_offline';
+};
+
+type SystemQueueFlushedMessage = {
+  type: 'system';
+  event: 'queue_flushed';
+  pairId: string;
+  delivered: number;
+};
+
 export type OutboundMessage =
   | { type: 'text'; from: string; content: string; id: string; timestamp: number }
   | { type: 'alarm'; from: string; level: 'default' | 'urgent'; note?: string; timestamp: number }
   | { type: 'status'; from: string; presence: 'available' | 'busy' | 'away'; note?: string; timestamp: number }
-  | { type: 'system'; event: 'connected'; pairId: string; partnerOnline: boolean }
+  | SystemConnectedMessage
+  | SystemQueuedMessage
+  | SystemQueueFlushedMessage
   | { type: 'error'; message: string };
 
 export function safeParseJson(payload: string): unknown | undefined {

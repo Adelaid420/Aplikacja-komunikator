@@ -26,7 +26,8 @@ W katalogu `server/` znajduje się działający most komunikacyjny zgodny z opis
 - utrzymanie połączeń WebSocket dla dwójki użytkowników powiązanych tym samym `pairId`,
 - natychmiastowe przekazywanie wiadomości tekstowych,
 - uruchamianie zdarzeń alarmowych (np. do późniejszego wyzwolenia głośnego sygnału po stronie klienta),
-- synchronizację statusu obecności.
+- synchronizację statusu obecności,
+- buforowanie wiadomości tekstowych i alarmów, gdy druga osoba jest offline.
 
 ### Jak uruchomić
 
