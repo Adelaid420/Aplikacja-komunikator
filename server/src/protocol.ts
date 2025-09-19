@@ -18,6 +18,11 @@ export const inboundMessageSchema = z.discriminatedUnion('type', [
     note: z.string().optional()
   }),
   z.object({
+    type: z.literal('receipt'),
+    messageId: z.string().min(1, 'messageId is required'),
+    status: z.enum(['received', 'read']).default('read')
+  }),
+  z.object({
     type: z.literal('status'),
     presence: z.enum(['available', 'busy', 'away']),
     note: z.string().optional()
@@ -52,6 +57,7 @@ type SystemQueueFlushedMessage = {
 export type OutboundMessage =
   | { type: 'text'; from: string; content: string; id: string; timestamp: number }
   | { type: 'alarm'; from: string; level: 'default' | 'urgent'; note?: string; timestamp: number }
+  | { type: 'receipt'; from: string; messageId: string; status: 'received' | 'read'; timestamp: number }
   | { type: 'status'; from: string; presence: 'available' | 'busy' | 'away'; note?: string; timestamp: number }
   | SystemConnectedMessage
   | SystemQueuedMessage

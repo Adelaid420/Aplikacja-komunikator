@@ -27,7 +27,8 @@ W katalogu `server/` znajduje się działający most komunikacyjny zgodny z opis
 - natychmiastowe przekazywanie wiadomości tekstowych,
 - uruchamianie zdarzeń alarmowych (np. do późniejszego wyzwolenia głośnego sygnału po stronie klienta),
 - synchronizację statusu obecności,
-- buforowanie wiadomości tekstowych i alarmów, gdy druga osoba jest offline.
+- buforowanie wiadomości tekstowych i alarmów, gdy druga osoba jest offline,
+- potwierdzenia odczytu (read receipts) przesyłane do nadawcy.
 
 ### Jak uruchomić
 
@@ -51,7 +52,7 @@ npm run demo:client -- --user ja --pair my-pair
 npm run demo:client -- --user ona --pair my-pair
 ```
 
-Polecenia `/alarm urgent budzik!` lub `/status busy na spotkaniu` pozwalają zasymulować przyciski akcji i synchronizację statusów. Skrypt można też użyć jednorazowo, np. `npm run demo:client -- --user ja --pair my-pair --text "Hej, słyszysz mnie?"`.
+Polecenia `/alarm urgent budzik!` lub `/status busy na spotkaniu` pozwalają zasymulować przyciski akcji i synchronizację statusów. Gdy otrzymasz wiadomość z identyfikatorem, możesz potwierdzić jej odczyt komendą `/read <messageId>` (lub po prostu `/read`, żeby użyć ostatniej wiadomości). Skrypt można też użyć jednorazowo, np. `npm run demo:client -- --user ja --pair my-pair --text "Hej, słyszysz mnie?"`.
 
 ## Kolejne kroki
 

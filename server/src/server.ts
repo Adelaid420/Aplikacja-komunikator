@@ -27,7 +27,7 @@ type PairId = string;
 type UserId = string;
 type PairSockets = Map<UserId, WebSocket>;
 
-type DeliverableMessage = Extract<OutboundMessage, { type: 'text' | 'alarm' }>;
+type DeliverableMessage = Extract<OutboundMessage, { type: 'text' | 'alarm' | 'receipt' }>;
 
 const activePairs = new Map<PairId, PairSockets>();
 const pendingQueues = new Map<PairId, DeliverableMessage[]>();
@@ -201,6 +201,27 @@ wss.on('connection', (socket, req) => {
             event: 'queued',
             pairId,
             messageId,
+            reason: 'partner_offline'
+          });
+        }
+        break;
+      }
+      case 'receipt': {
+        const outbound: OutboundMessage = {
+          type: 'receipt',
+          from: userId,
+          messageId: message.messageId,
+          status: message.status,
+          timestamp
+        };
+        const delivered = notifyPartner(pairId, userId, outbound);
+        if (!delivered) {
+          enqueuePendingMessage(pairId, outbound);
+          sendJson(socket, {
+            type: 'system',
+            event: 'queued',
+            pairId,
+            messageId: message.messageId,
             reason: 'partner_offline'
           });
         }

@@ -37,6 +37,8 @@ const options = parseArgs(process.argv.slice(2));
 
 const ws = new WebSocket(`ws://localhost:${options.port}?pairId=${options.pairId}&userId=${options.userId}`);
 
+let lastPartnerMessageId: string | undefined;
+
 ws.on('open', () => {
   console.log(`Connected as ${options.userId} (pair: ${options.pairId})`);
 
@@ -53,7 +55,7 @@ ws.on('open', () => {
   }
 
   if (!options.text && !options.alarm && !options.status) {
-    console.log('Interactive mode. Type message and press enter, or use /alarm or /status commands.');
+    console.log('Tryb interaktywny. Pisz wiadomość i naciśnij enter albo użyj komend /alarm, /status lub /read.');
     const rl = createInterface({ input: process.stdin, output: process.stdout });
     rl.on('line', (line) => {
       if (!line.trim()) {
@@ -69,13 +71,33 @@ ws.on('open', () => {
         ws.send(JSON.stringify({ type: 'status', presence, note: rest.join(' ') || undefined }));
         return;
       }
+      if (line.startsWith('/read')) {
+        const [, maybeId, maybeStatus] = line.split(' ');
+        const messageId = maybeId || lastPartnerMessageId;
+        if (!messageId) {
+          console.log('Brak ID wiadomości do potwierdzenia. Najpierw odbierz wiadomość lub podaj ID.');
+          return;
+        }
+        const status = maybeStatus === 'received' ? 'received' : 'read';
+        ws.send(JSON.stringify({ type: 'receipt', messageId, status }));
+        return;
+      }
       ws.send(JSON.stringify({ type: 'text', content: line }));
     });
   }
 });
 
 ws.on('message', (data) => {
-  console.log('⟶ ', data.toString());
+  const text = data.toString();
+  console.log('⟶ ', text);
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && parsed.type === 'text' && parsed.from && parsed.from !== options.userId && typeof parsed.id === 'string') {
+      lastPartnerMessageId = parsed.id;
+    }
+  } catch (error) {
+    // Ignorujemy niepoprawne JSON-y (np. gdy serwer wyśle zwykły tekst diagnostyczny).
+  }
 });
 
 ws.on('close', () => {
