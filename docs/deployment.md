@@ -8,11 +8,12 @@ Poniższe instrukcje pozwalają utrzymać most WebSocket online 24/7. Każda pla
 2. Podaj adres repozytorium (lub wybierz wcześniej przygotowanego forka).
 3. W polu **Build Command** wpisz `cd server && npm install && npm run build`.
 4. W polu **Start Command** wpisz `cd server && npm run start`.
-5. Wybierz darmowy plan *Free* (możesz zmienić na płatny, aby mieć brak usypiania instancji).
-6. Po pierwszym wdrożeniu odczekaj kilka minut i przetestuj `https://twoja-nazwa.onrender.com/healthz`. Odpowiedź `{"status":"ok"}` oznacza, że serwer działa.
-7. Adres WebSocket dla klienta to `wss://twoja-nazwa.onrender.com?pairId=<PAIR>&userId=<USER>`.
+5. Wybierz plan co najmniej **Starter** (plan Free usypia usługę po kilku minutach braku ruchu, więc nie zapewni pracy 24/7).
+6. W zakładce **Environment** dodaj `FCM_SERVER_KEY` z kluczem serwerowym Firebase Cloud Messaging.
+7. Po pierwszym wdrożeniu przetestuj `https://twoja-nazwa.onrender.com/healthz`. Odpowiedź `{"status":"ok"}` oznacza, że serwer działa.
+8. Adres WebSocket dla klienta to `wss://twoja-nazwa.onrender.com?pairId=<PAIR>&userId=<USER>`.
 
-> Render w darmowym planie usypia aplikację po kilku minutach bez ruchu. Pierwsze połączenie po przerwie potrwa kilka sekund dłużej.
+> Jeśli mimo wszystko korzystasz z planu Free, licz się z opóźnieniem przy pierwszym połączeniu po przerwie (instancja wybudza się 10–30 sekund). Do stałej pracy lepiej użyć płatnego planu lub platformy z opcją Always On (Railway, Fly.io, VPS).
 
 ## Railway
 
@@ -48,6 +49,23 @@ Poniższe instrukcje pozwalają utrzymać most WebSocket online 24/7. Każda pla
 - Po zmianach w kodzie uruchom ponownie wdrożenie (Render i Railway robią to automatycznie przy każdym pushu).
 - Przed publikacją warto lokalnie wykonać `npm run build --prefix server` oraz `npm run lint --prefix server`.
 - Monitoruj logi (`render logs`, `railway logs`, `flyctl logs`), aby szybko wychwycić błędy połączeń.
+
+## Rejestrowanie urządzeń mobilnych (push)
+
+- `POST /register-device` – rejestruje token powiadomień:
+  ```bash
+  curl -X POST "https://twoja-nazwa.onrender.com/register-device" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "pairId": "my-pair",
+      "userId": "amelia",
+      "token": "FCM_TOKEN",
+      "platform": "android"
+    }'
+  ```
+- `DELETE /register-device` – usuwa token (ten sam JSON co powyżej).
+- Tokeny trzymane są w pamięci – w produkcji warto zapisać je np. w Redisie lub bazie SQL i synchronizować z kontem użytkownika.
+- Klucz `FCM_SERVER_KEY` jest obowiązkowy – bez niego push nie zostanie wysłany.
 
 ## Konfiguracja klienta
 

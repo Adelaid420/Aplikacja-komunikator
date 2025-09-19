@@ -23,7 +23,7 @@
           </div>
           <div class="presence-panel">
             <div class="connection-state" id="connection-state">Niepołączono</div>
-            <div class="partner-state" id="partner-state">Partnerka offline</div>
+            <div class="partner-state" id="partner-state">Partner/partnerka offline</div>
           </div>
           <form id="connection-form" class="form-section" autocomplete="off">
             <label class="field">
@@ -46,8 +46,8 @@
               <input type="text" id="user-id" name="userId" required spellcheck="false" placeholder="np. ja" />
             </label>
             <label class="field">
-              <span>Imię partnerki</span>
-              <input type="text" id="partner-name" name="partnerName" placeholder="np. Ania" />
+              <span>Imię partnera/partnerki</span>
+              <input type="text" id="partner-name" name="partnerName" placeholder="np. Amelia" />
             </label>
             <label class="toggle auto-connect">
               <input type="checkbox" id="auto-connect" />
@@ -59,7 +59,7 @@
           <section class="form-section voice-section">
             <header>
               <h2>Głos awatara</h2>
-              <p id="voice-support">Syntetyczny głos odczyta wiadomości partnerki.</p>
+              <p id="voice-support">Syntetyczny głos odczyta wiadomości partnera/partnerki.</p>
             </header>
             <label class="toggle">
               <input type="checkbox" id="voice-enabled" checked />
@@ -80,14 +80,14 @@
             </div>
             <div class="queue-indicator" id="queue-indicator" hidden>
               <span class="dot"></span>
-              <span>Twoje wiadomości czekają na partnerkę</span>
+              <span>Twoje wiadomości czekają na partnera/partnerkę</span>
             </div>
           </header>
           <section class="timeline" id="timeline" aria-live="polite" aria-label="Historia rozmowy"></section>
           <form id="message-form" class="form-section message-form">
             <label class="field">
               <span>Napisz wiadomość</span>
-              <textarea id="message-input" rows="2" placeholder="Hej Miku, powiedz Ani że..." required></textarea>
+              <textarea id="message-input" rows="2" placeholder="Hej Miku, powiedz Amelii że..." required></textarea>
             </label>
             <div class="actions-row">
               <button type="submit" class="primary">Wyślij</button>

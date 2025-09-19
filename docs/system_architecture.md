@@ -30,7 +30,7 @@ System składa się z aplikacji klienckich (mobilnej i desktopowej), usług towa
 
 3. **Backend**
    - **API REST** (NestJS/Express) – rejestracja użytkowników, zarządzanie parami, tokeny, przechowywanie ustawień.
-   - **Serwer sygnałowy/WebSocket** – połączenia w czasie rzeczywistym, kolejka Redis dla skalowania horyzontalnego. W repozytorium znajduje się prototypowa implementacja tego modułu (`server/`), która umożliwia lokalne testy komunikacji pary użytkowników.
+  - **Serwer sygnałowy/WebSocket** – połączenia w czasie rzeczywistym, kolejka Redis dla skalowania horyzontalnego. W repozytorium znajduje się prototypowa implementacja tego modułu (`server/`) wraz z prostym endpointem `POST /register-device` do zapisywania tokenów FCM.
    - **Baza danych** – PostgreSQL (relacyjna) + Redis (sesje, kolejki). Historia wiadomości może być przechowywana w szyfrowanej formie (np. w S3 lub w bazie dokumentowej).
    - **Serwis powiadomień push** – Firebase Cloud Messaging (Android), Apple Push Notification Service (iOS), Windows Notification Service.
    - **Serwis TTS** – integracja z zewnętrznym API lub kontener z modelem TTS; komunikacja przez kolejkę (np. RabbitMQ) w celu przygotowania próbek.

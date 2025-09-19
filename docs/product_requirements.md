@@ -6,7 +6,7 @@ Stworzenie dwukierunkowego komunikatora działającego w tle, w którym każda o
 ## Persony
 
 1. **Ja** – inicjuję kontakt, chcę szybko upewnić się, że partnerka zobaczy i usłyszy wiadomość.
-2. **Partnerka** – otrzymuje wiadomości, często ma wyciszony telefon, potrzebuje wyraźnego sygnału kiedy muszę się z nią pilnie skontaktować.
+2. **Amelia (partnerka)** – otrzymuje wiadomości, często ma wyciszony telefon, potrzebuje wyraźnego sygnału kiedy muszę się z nią pilnie skontaktować.
 
 ## Historie użytkownika
 
@@ -27,7 +27,7 @@ Stworzenie dwukierunkowego komunikatora działającego w tle, w którym każda o
 2. **Wiadomości tekstowe**
    - Wysyłanie i odbieranie w czasie rzeczywistym (WebSockety).
    - Historia przechowywana lokalnie oraz opcjonalnie w chmurze.
-   - Powiadomienia push z treścią.
+   - Powiadomienia push z treścią, nawet gdy aplikacja jest zamknięta.
 
 3. **Alarm**
    - Przycisk "Włącz alarm" uruchamia pełnoekranowe powiadomienie u partnerki z głośnym dźwiękiem i animacją.
@@ -46,6 +46,7 @@ Stworzenie dwukierunkowego komunikatora działającego w tle, w którym każda o
 ## Wymagania niefunkcjonalne
 
 - Działanie w tle z ograniczonym zużyciem baterii (<3% dziennie).
+- Powiadomienia push muszą dotrzeć w <5 s i budzić aplikację nawet w stanie uśpienia (Android: kanał "high priority", iOS: krytyczne alerty jeśli dostępne).
 - Czas dostarczenia wiadomości <1 s przy stabilnym połączeniu.
 - Dostępność aplikacji backendowej 99,5% miesięcznie.
 - Zgodność z Androidem (11+) i Windows/macOS (aplikacja desktopowa).

@@ -27,6 +27,7 @@ const testVoiceButton = document.getElementById('test-voice');
 
 const STORAGE_KEY = 'komunikator-settings';
 const appDefaults = window.komunikator?.defaults ?? {};
+const PARTNER_FALLBACK_NAME = 'Partner/partnerka';
 
 function loadStoredSettings() {
   if (!('localStorage' in window)) {
@@ -98,11 +99,15 @@ let socket = null;
 let connectionState = 'disconnected';
 let partnerOnline = false;
 let partnerPresence = { presence: 'offline', note: '' };
-let partnerName = partnerNameInput.value.trim() || 'Partnerka';
+let partnerName = partnerNameInput.value.trim();
 let currentUserId = userIdInput.value.trim();
 let lastPartnerMessageId = null;
 const queuedMessages = new Set();
 const messageRegistry = new Map();
+
+function getPartnerDisplayName() {
+  return partnerName || PARTNER_FALLBACK_NAME;
+}
 
 let audioContext = null;
 let voiceEnabled = true;
@@ -146,7 +151,7 @@ function renderMessage(message, direction) {
 
   const meta = document.createElement('div');
   meta.className = 'meta';
-  const author = direction === 'outgoing' ? 'Ty' : partnerName;
+  const author = direction === 'outgoing' ? 'Ty' : getPartnerDisplayName();
   meta.innerHTML = `<span>${author}</span><time>${formatTimestamp(message.timestamp)}</time>`;
 
   const bubble = document.createElement('div');
@@ -155,7 +160,9 @@ function renderMessage(message, direction) {
 
   const statusPill = document.createElement('div');
   statusPill.className = 'status-pill';
-  statusPill.textContent = direction === 'outgoing' ? 'Wysłano' : `Nowa od ${partnerName}`;
+  statusPill.textContent = direction === 'outgoing'
+    ? 'Wysłano'
+    : `Nowa od ${getPartnerDisplayName()}`;
 
   el.append(meta, bubble, statusPill);
   timelineEl.append(el);
@@ -174,7 +181,7 @@ function renderAlarm(message, direction) {
 
   const meta = document.createElement('div');
   meta.className = 'meta';
-  meta.innerHTML = `<span>${direction === 'outgoing' ? 'Ty' : partnerName}</span><time>${formatTimestamp(message.timestamp)}</time>`;
+  meta.innerHTML = `<span>${direction === 'outgoing' ? 'Ty' : getPartnerDisplayName()}</span><time>${formatTimestamp(message.timestamp)}</time>`;
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
@@ -193,12 +200,12 @@ function renderStatus(message) {
   const el = document.createElement('article');
   el.className = 'event system status-update';
   const presenceMap = {
-    available: 'dostępna',
-    busy: 'zajęta',
+    available: 'dostępny/a',
+    busy: 'zajęty/a',
     away: 'poza klawiaturą'
   };
   const note = message.note ? ` – ${message.note}` : '';
-  el.textContent = `${partnerName} jest teraz ${presenceMap[message.presence] ?? message.presence}${note}`;
+  el.textContent = `${getPartnerDisplayName()} jest teraz ${presenceMap[message.presence] ?? message.presence}${note}`;
   timelineEl.append(el);
   scrollTimelineToBottom();
 }
@@ -221,13 +228,14 @@ function updateConnectionUi() {
 
 function updatePartnerUi() {
   const presenceLabelMap = {
-    available: 'dostępna',
-    busy: 'zajęta',
+    available: 'dostępny/a',
+    busy: 'zajęty/a',
     away: 'poza klawiaturą',
     offline: 'offline'
   };
   const presenceLabel = presenceLabelMap[partnerPresence.presence] ?? partnerPresence.presence;
-  const statusText = partnerOnline ? `${partnerName} ${presenceLabel}` : `${partnerName} offline`;
+  const partnerDisplay = getPartnerDisplayName();
+  const statusText = partnerOnline ? `${partnerDisplay} ${presenceLabel}` : `${partnerDisplay} offline`;
   partnerStateEl.textContent = partnerPresence.note ? `${statusText} – ${partnerPresence.note}` : statusText;
 }
 
@@ -418,7 +426,7 @@ function handleIncoming(raw) {
       } else {
         queueIndicator.hidden = false;
       }
-      renderSystemEvent('Partnerka jest offline – wiadomość została zapisana.');
+      renderSystemEvent(`${getPartnerDisplayName()} jest offline – wiadomość została zapisana.`);
     } else if (payload.event === 'queue_flushed') {
       clearQueueState(payload.delivered);
     }
@@ -455,7 +463,7 @@ function handleIncoming(raw) {
       partnerPresence.presence = 'busy';
       updatePartnerUi();
       playAlarm(payload.level);
-      speak(`Alarm od ${partnerName}: ${payload.note ?? 'sprawdź co się dzieje!'}`);
+      speak(`Alarm od ${getPartnerDisplayName()}: ${payload.note ?? 'sprawdź co się dzieje!'}`);
     }
     return;
   }
@@ -505,7 +513,7 @@ function connect() {
   const serverUrl = serverUrlInput.value.trim();
   const pairId = pairIdInput.value.trim();
   const userId = userIdInput.value.trim();
-  partnerName = partnerNameInput.value.trim() || 'Partnerka';
+  partnerName = partnerNameInput.value.trim();
 
   if (!serverUrl || !pairId || !userId) {
     renderSystemEvent('Uzupełnij adres serwera, ID pary i swoje ID.');
@@ -559,6 +567,11 @@ function connect() {
   input.addEventListener('blur', () => {
     persistSettings();
   });
+});
+
+partnerNameInput.addEventListener('input', () => {
+  partnerName = partnerNameInput.value.trim();
+  updatePartnerUi();
 });
 
 autoConnectToggle.addEventListener('change', () => {

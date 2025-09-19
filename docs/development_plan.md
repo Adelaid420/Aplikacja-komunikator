@@ -47,6 +47,7 @@
 | Mobile | Widżet overlay z animacją Lottie i reakcją na dotyk | Wysoki |
 | Desktop | Obsługa autostartu i okna zawsze na wierzchu | Średni |
 | Backend | Protokół szyfrowania end-to-end i rotacja kluczy | Wysoki |
+| Backend | Integracja z FCM (rejestracja tokenów, wysyłka push, retry) | Wysoki |
 | Backend | Kolejka alarmów i gwarantowana dostawa (retry + TTL) | Wysoki |
 | DevOps | Pipeline CI/CD generujący APK, IPA (po TestFlight) i paczkę desktopową | Średni |
 | QA | Scenariusze testów alarmu, w tym tryb DND, tryb nocny, offline | Wysoki |

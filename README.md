@@ -1,13 +1,13 @@
 # Aplikacja komunikator "Miku"
 
-Repozytorium zawiera dokumentację wstępną komunikatora, który pozwala na natychmiastowe porozumiewanie się z drugą osobą przy pomocy stałego, animowanego awatara widocznego na ekranie telefonu i komputera. System ma wspierać błyskawiczne przesyłanie wiadomości, uruchamianie alarmów dźwiękowych oraz komunikację głosową przy wykorzystaniu spersonalizowanego głosu (np. głosu partnerki).
+Repozytorium zawiera dokumentację wstępną komunikatora, który pozwala na natychmiastowe porozumiewanie się z drugą osobą przy pomocy stałego, animowanego awatara widocznego na ekranie telefonu i komputera. System ma wspierać błyskawiczne przesyłanie wiadomości, uruchamianie alarmów dźwiękowych oraz komunikację głosową przy wykorzystaniu spersonalizowanego głosu (np. głosu partnera/partnerki).
 
 ## Główne założenia produktu
 
 - Stała obecność małego widżetu z awatarem "Miku" na pulpicie telefonu oraz komputera.
 - Dwukierunkowe przesyłanie krótkich wiadomości tekstowych, które natychmiast pojawiają się w widżecie drugiej osoby.
 - Przyciski akcji (np. "Włącz alarm", "Zadzwoń") wymuszające zwrócenie uwagi odbiorcy poprzez głośny sygnał, wibracje i powiadomienie na całym ekranie.
-- Tryb komunikacji głosowej wykorzystujący syntezę głosu partnerki do odczytywania wiadomości.
+- Tryb komunikacji głosowej wykorzystujący syntezę głosu partnera/partnerki do odczytywania wiadomości.
 - Działanie w tle z minimalnym zużyciem baterii oraz możliwość automatycznego uruchamiania po starcie systemu.
 - Bezpieczna synchronizacja poprzez szyfrowanie end-to-end i uwierzytelnianie dwuskładnikowe.
 
@@ -61,7 +61,7 @@ Po zakończeniu procesu instalator znajdziesz w `desktop/release/Komunikator-<we
 
 > Domyślny adres serwera (`wss://aplikacja-komunikator.onrender.com`) możesz nadpisać zmiennymi środowiskowymi przed uruchomieniem Electron, np. `MIKU_SERVER_URL=wss://twoj-serwer.example npm run start:render`.
 
-> W oknie Miku znajdziesz przełącznik **„Łącz automatycznie przy uruchomieniu”**. Dane logowania (adres, ID pary, Twoje ID i imię partnerki) zapisują się lokalnie, więc przy następnym kliknięciu `Komunikator.exe` aplikacja połączy się sama.
+> W oknie Miku znajdziesz przełącznik **„Łącz automatycznie przy uruchomieniu”**. Dane logowania (adres, ID pary, Twoje ID i imię partnera/partnerki) zapisują się lokalnie, więc przy następnym kliknięciu `Komunikator.exe` aplikacja połączy się sama.
 
 > Zatrzymanie aplikacji następuje po zamknięciu terminala lub wciśnięciu `Ctrl + C` w oknie z uruchomionymi procesami.
 
@@ -69,13 +69,13 @@ Po zakończeniu procesu instalator znajdziesz w `desktop/release/Komunikator-<we
 
 Folder `client/` zawiera graficzny panel rozmowy inspirowany dokumentacją UX:
 
-- podświetlany awatar „Miku” reagujący na połączenie oraz status partnerki,
+- podświetlany awatar „Miku” reagujący na połączenie oraz status partnera/partnerki,
 - historia czatu z bańkami wiadomości, potwierdzeniami odczytu i oznaczeniem kolejkowanych komunikatów,
 - przyciski wysłania wiadomości tekstowej, uruchomienia alarmu (delikatny lub pilny) i aktualizacji statusu,
-- wsparcie dla syntezy mowy – przychodzące wiadomości partnerki są odczytywane na głos wybranym głosem systemowym,
+- wsparcie dla syntezy mowy – przychodzące wiadomości partnera/partnerki są odczytywane na głos wybranym głosem systemowym,
 - wizualne oraz dźwiękowe powiadomienie o alarmie (sygnał audio + wibracje, jeśli urządzenie je obsługuje).
 
-Widżet łączy się z serwerem po podaniu `pairId` (identyfikatora pary) oraz `userId`. W trybie offline własne wiadomości otrzymują plakietkę „czeka na dostarczenie”, a po powrocie partnerki online pojawia się komunikat o dostarczeniu zaległych pozycji.
+Widżet łączy się z serwerem po podaniu `pairId` (identyfikatora pary) oraz `userId`. W trybie offline własne wiadomości otrzymują plakietkę „czeka na dostarczenie”, a po powrocie partnera/partnerki online pojawia się komunikat o dostarczeniu zaległych pozycji.
 
 ## Prototyp backendu
 
@@ -119,10 +119,34 @@ Aby komunikator działał 24/7, wdroż prototypowy serwer WebSocket na platformi
 1. Zrób forka repozytorium lub wskaż je bezpośrednio w kreatorze [Render Web Service](https://dashboard.render.com/).
 2. Jako „Build Command” ustaw `cd server && npm install && npm run build`.
 3. Jako „Start Command” ustaw `cd server && npm run start`.
-4. Wybierz darmowy plan Free Tier, zatwierdź. Render automatycznie ustawi zmienną `PORT`, z której korzysta nasz serwer.
-5. Po wdrożeniu sprawdź `https://twoja-nazwa.onrender.com/healthz`. Jeśli widzisz `{"status":"ok"}`, usługa działa.
+4. Wybierz plan co najmniej **Starter**, aby instancja nie usypiała się po kilku minutach braku ruchu (plan Free służy jedynie do testów).
+5. W zakładce **Environment** dodaj zmienną `FCM_SERVER_KEY` z kluczem serwerowym Firebase Cloud Messaging – backend wykorzysta ją do wysyłania powiadomień push.
+6. Po wdrożeniu sprawdź `https://twoja-nazwa.onrender.com/healthz`. Jeśli widzisz `{"status":"ok"}`, usługa działa.
+
+> Render w darmowym planie usypia aplikację po kilku minutach bez ruchu. Jeśli potrzebujesz działania 24/7, przełącz się na płatny plan albo skorzystaj z platformy oferującej tryb "Always On" (np. Fly.io z maszynami `shared-cpu-1x`).
 
 Analogiczne kroki znajdziesz dla Railway i Fly.io w `docs/deployment.md` wraz z instrukcjami aktualizacji oraz monitoringu.
+
+### Powiadomienia push i praca w tle
+
+Serwer udostępnia endpoint `POST /register-device`, dzięki któremu aplikacje mobilne i desktopowe mogą zgłaszać swoje tokeny powiadomień (FCM). Przykład:
+
+```bash
+curl -X POST "https://twoja-nazwa.onrender.com/register-device" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pairId": "my-pair",
+    "userId": "amelia",
+    "token": "FCM_TOKEN_Z_URZĄDZENIA",
+    "platform": "android"
+  }'
+```
+
+- przy każdym nowym alarmie lub wiadomości serwer wyśle powiadomienie do zarejestrowanych urządzeń partnera/partnerki,
+- aby wyrejestrować urządzenie, wyślij `DELETE /register-device` z identycznym JSON-em,
+- tokeny przechowywane są w pamięci – do środowiska produkcyjnego podłącz bazę (np. Redis) i zapisz tokeny razem z kontem użytkownika.
+
+Na telefonie (np. Flutter + `firebase_messaging`) uruchom usługę w tle, która po odebraniu powiadomienia z pola `data` rozbudzi widżet i odtworzy alarm. Dzięki temu awatar może reagować 24/7, nawet gdy aplikacja jest zminimalizowana.
 
 ## Kolejne kroki
 

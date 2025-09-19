@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { IncomingMessage } from 'node:http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
   ConnectionParams,
@@ -9,13 +9,23 @@ import {
   inboundMessageSchema,
   safeParseJson
 } from './protocol.js';
+import type { RegisterDeviceInput } from './push.js';
+import { corsHeaders, dispatchPushEvent, registerDeviceToken, unregisterDeviceToken } from './push.js';
 
 const port = Number(process.env.PORT ?? 8080);
 
 const httpServer = createServer((req, res) => {
-  if (req.url?.startsWith('/healthz')) {
+  const host = req.headers.host ?? 'localhost';
+  const url = req.url ? new URL(req.url, `http://${host}`) : null;
+
+  if (url?.pathname === '/healthz') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok' }));
+    return;
+  }
+
+  if (url?.pathname === '/register-device') {
+    void handleDeviceRegistration(req, res);
     return;
   }
 
@@ -133,6 +143,86 @@ function flushPendingMessages(pairId: PairId, userId: UserId): number {
   return delivered;
 }
 
+function readRequestBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+
+    const cleanup = () => {
+      req.removeListener('data', onData);
+      req.removeListener('end', onEnd);
+      req.removeListener('error', onError);
+      req.removeListener('aborted', onAborted);
+    };
+
+    const onData = (chunk: Buffer | string) => {
+      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    };
+
+    const onEnd = () => {
+      cleanup();
+      resolve(Buffer.concat(chunks).toString('utf-8'));
+    };
+
+    const onError = (error: Error) => {
+      cleanup();
+      reject(error);
+    };
+
+    const onAborted = () => {
+      cleanup();
+      reject(new Error('Request aborted'));
+    };
+
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('error', onError);
+    req.on('aborted', onAborted);
+  });
+}
+
+async function handleDeviceRegistration(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const origin = req.headers.origin;
+  const headers = corsHeaders(origin);
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, headers);
+    res.end();
+    return;
+  }
+
+  if (req.method !== 'POST' && req.method !== 'DELETE') {
+    res.writeHead(405, { ...headers, Allow: 'POST,DELETE,OPTIONS', 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  let payload: Partial<RegisterDeviceInput> = {};
+  try {
+    const raw = await readRequestBody(req);
+    payload = raw ? (JSON.parse(raw) as Partial<RegisterDeviceInput>) : {};
+  } catch (error) {
+    res.writeHead(400, { ...headers, 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid JSON payload' }));
+    return;
+  }
+
+  const { pairId, userId, token, platform } = payload;
+  if (!pairId || !userId || !token) {
+    res.writeHead(400, { ...headers, 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'pairId, userId and token are required' }));
+    return;
+  }
+
+  if (req.method === 'POST') {
+    registerDeviceToken({ pairId, userId, token, platform });
+  } else {
+    unregisterDeviceToken({ pairId, userId, token, platform });
+  }
+
+  res.writeHead(204, headers);
+  res.end();
+}
+
 const wss = new WebSocketServer({ server: httpServer });
 
 wss.on('connection', (socket, req) => {
@@ -204,6 +294,14 @@ wss.on('connection', (socket, req) => {
             reason: 'partner_offline'
           });
         }
+        void dispatchPushEvent({
+          type: 'text',
+          pairId,
+          senderId: userId,
+          messageId,
+          content: message.content,
+          timestamp
+        });
         break;
       }
       case 'receipt': {
@@ -245,6 +343,14 @@ wss.on('connection', (socket, req) => {
             reason: 'partner_offline'
           });
         }
+        void dispatchPushEvent({
+          type: 'alarm',
+          pairId,
+          senderId: userId,
+          level: message.level,
+          note: message.note,
+          timestamp
+        });
         break;
       }
       case 'status': {
