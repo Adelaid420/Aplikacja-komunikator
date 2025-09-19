@@ -17,6 +17,40 @@ Repozytorium zawiera dokumentację wstępną komunikatora, który pozwala na nat
 - `docs/system_architecture.md` – proponowana architektura rozwiązania (frontend, backend, usługi w tle, przetwarzanie głosu).
 - `docs/experience_design.md` – opis zachowania widżetu, scenariuszy interakcji i przepływów alarmów.
 - `docs/development_plan.md` – plan wdrożenia, etapy projektowe oraz lista zadań na pierwsze sprinty.
+- `server/` – pierwsza implementacja mostu czasu rzeczywistego opartego o WebSockety (TypeScript + `ws`).
+
+## Pierwszy prototyp backendu
+
+W katalogu `server/` znajduje się działający most komunikacyjny zgodny z opisem w dokumentacji. Obsługuje on:
+
+- utrzymanie połączeń WebSocket dla dwójki użytkowników powiązanych tym samym `pairId`,
+- natychmiastowe przekazywanie wiadomości tekstowych,
+- uruchamianie zdarzeń alarmowych (np. do późniejszego wyzwolenia głośnego sygnału po stronie klienta),
+- synchronizację statusu obecności.
+
+### Jak uruchomić
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+Serwer wystawia websocket pod adresem `ws://localhost:8080?pairId=<PAIR>&userId=<USER>` oraz prosty endpoint kontrolny `GET /healthz`.
+
+### Szybki test lokalny
+
+W dwóch terminalach uruchom skrypt kliencki, podszywając się pod obie strony rozmowy:
+
+```bash
+# terminal 1
+npm run demo:client -- --user ja --pair my-pair
+
+# terminal 2
+npm run demo:client -- --user ona --pair my-pair
+```
+
+Polecenia `/alarm urgent budzik!` lub `/status busy na spotkaniu` pozwalają zasymulować przyciski akcji i synchronizację statusów. Skrypt można też użyć jednorazowo, np. `npm run demo:client -- --user ja --pair my-pair --text "Hej, słyszysz mnie?"`.
 
 ## Kolejne kroki
 

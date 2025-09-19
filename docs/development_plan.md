@@ -13,7 +13,7 @@
 2. **Sprint 2**
    - Implementacja WebSocketów (Socket.IO lub raw WS) w aplikacji.
    - Lokalna baza danych (Hive/Drift) na historię wiadomości.
-   - Backend: kolejka Redis, dostarczanie wiadomości, potwierdzenia.
+   - Backend: kolejka Redis, dostarczanie wiadomości, potwierdzenia. (Prototypowy most WS dostępny w katalogu `server/` umożliwia rozpoczęcie testów klienta.)
 3. **Sprint 3**
    - Widżet floating (Android `OverlayPermissions`, Windows always-on-top).
    - Push notyfikacje i podstawowe animacje awatara.

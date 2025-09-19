@@ -1,0 +1,9 @@
+# Global ignores
+.DS_Store
+
+# Node/TypeScript build artifacts
+server/node_modules/
+server/dist/
+
+# Logs
+server/npm-debug.log*
