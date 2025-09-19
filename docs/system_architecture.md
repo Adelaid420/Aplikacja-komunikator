@@ -26,6 +26,7 @@ System składa się z aplikacji klienckich (mobilnej i desktopowej), usług towa
 2. **Frontend desktopowy**
    - Wersja Flutter Desktop lub Electron z modułem natywnym (Windows/macOS).
    - Utrzymuje widżet przypięty do pulpitu, obsługuje powiadomienia systemowe i alarm pełnoekranowy.
+   - Prototyp webowy (`client/`) – punkt odniesienia dla logiki UI oraz integracji z WebSocketami.
 
 3. **Backend**
    - **API REST** (NestJS/Express) – rejestracja użytkowników, zarządzanie parami, tokeny, przechowywanie ustawień.

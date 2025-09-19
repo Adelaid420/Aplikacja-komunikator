@@ -6,6 +6,16 @@
 - **Pozycjonowanie**: użytkownik przeciąga po ekranie, widżet przykleja się do krawędzi. Na desktopie można go przypiąć nad wszystkimi oknami.
 - **Tryb czuwania**: przez większość czasu półprzezroczysty (40% opacity). Po otrzymaniu wiadomości lub alarmu rozświetla się i powiększa.
 
+### Prototyp webowy
+
+- **Kompozycja**: karta typu glassmorphism z gradientowym tłem (radialne przejścia turkusu → granat) i dwoma kolumnami – po lewej awatar, po prawej panel rozmowy.
+- **Awatar**: stylizowana głowa Miku z włosami w kształcie serca, pulsująca poświata i animowane mruganie. W trybie alarmu poświata przybiera odcień różu.
+- **Kolory przewodnie**: turkus (`#4FE0FF`), granat (`#0C1023`), róż (`#FF5F91`) i akcent zieleni (`#74FFBA`) do komunikatów uspokajających.
+- **Typografia**: font bezszeryfowy (Poppins/Segoe UI) z delikatnie poszerzonym kerningiem dla nagłówków, małe litery w statusach dla większej miękkości.
+- **Mikrointerakcje**: przyciski unoszą się o 1px, bańki wiadomości wyróżniają się paskiem koloru (turkus dla partnerki, biały dla nadawcy). Potwierdzenia odczytu pojawiają się w formie kapsułki z napisem „Dostarczono/Przeczytane”.
+- **Stan offline**: wiadomości oczekujące otrzymują plakietkę „⏳ czeka na dostarczenie”, a nagłówek pokazuje informację o buforowaniu.
+- **Synteza mowy**: panel głosu pozwala wybrać głos systemowy i włączyć odczytywanie wiadomości – Miku wypowiada powitanie testowe.
+
 ## Okno rozmowy
 
 - Minimalistyczny chat bubble, tło gradientowe inspirowane tematem Miku.

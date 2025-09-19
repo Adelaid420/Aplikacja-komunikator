@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Miku Communicator – widżet awatara</title>
+    <meta
+      name="description"
+      content="Prototyp komunikatora z awatarem Miku łączący natychmiastową wymianę wiadomości, alarmy i potwierdzenia odczytu."
+    />
+  </head>
+  <body>
+    <main class="surface">
+      <div class="glass-card">
+        <aside class="avatar-column">
+          <div class="avatar-wrapper" aria-live="polite">
+            <div class="avatar-glow"></div>
+            <div class="avatar-circle">
+              <div class="avatar-eyes"></div>
+              <div class="avatar-mouth"></div>
+              <div class="avatar-hair"></div>
+            </div>
+          </div>
+          <div class="presence-panel">
+            <div class="connection-state" id="connection-state">Niepołączono</div>
+            <div class="partner-state" id="partner-state">Partnerka offline</div>
+          </div>
+          <form id="connection-form" class="form-section" autocomplete="off">
+            <label class="field">
+              <span>Adres serwera</span>
+              <input
+                type="text"
+                id="server-url"
+                name="serverUrl"
+                value="ws://localhost:8080"
+                required
+                spellcheck="false"
+              />
+            </label>
+            <label class="field">
+              <span>ID pary</span>
+              <input type="text" id="pair-id" name="pairId" value="my-pair" required spellcheck="false" />
+            </label>
+            <label class="field">
+              <span>Twoje ID</span>
+              <input type="text" id="user-id" name="userId" value="ja" required spellcheck="false" />
+            </label>
+            <label class="field">
+              <span>Imię partnerki</span>
+              <input type="text" id="partner-name" name="partnerName" value="Ania" />
+            </label>
+            <button type="submit" class="primary" id="connect-button">Połącz</button>
+          </form>
+          <section class="form-section voice-section">
+            <header>
+              <h2>Głos awatara</h2>
+              <p id="voice-support">Syntetyczny głos odczyta wiadomości partnerki.</p>
+            </header>
+            <label class="toggle">
+              <input type="checkbox" id="voice-enabled" checked />
+              <span>Odtwarzaj wiadomości na głos</span>
+            </label>
+            <label class="field">
+              <span>Wybierz głos</span>
+              <select id="voice-select"></select>
+            </label>
+            <button type="button" class="ghost" id="test-voice">Przetestuj głos</button>
+          </section>
+        </aside>
+        <section class="conversation-column">
+          <header class="panel-header">
+            <div>
+              <h1>Panel Miku</h1>
+              <p class="subtitle">Wiadomości, statusy i alarmy w jednym widżecie.</p>
+            </div>
+            <div class="queue-indicator" id="queue-indicator" hidden>
+              <span class="dot"></span>
+              <span>Twoje wiadomości czekają na partnerkę</span>
+            </div>
+          </header>
+          <section class="timeline" id="timeline" aria-live="polite" aria-label="Historia rozmowy"></section>
+          <form id="message-form" class="form-section message-form">
+            <label class="field">
+              <span>Napisz wiadomość</span>
+              <textarea id="message-input" rows="2" placeholder="Hej Miku, powiedz Ani że..." required></textarea>
+            </label>
+            <div class="actions-row">
+              <button type="submit" class="primary">Wyślij</button>
+              <button type="button" class="ghost" id="mark-read" disabled>Potwierdź odczyt</button>
+            </div>
+          </form>
+          <section class="form-section actions-section">
+            <header>
+              <h2>Alarm i status</h2>
+            </header>
+            <div class="actions-row">
+              <label class="field small">
+                <span>Poziom alarmu</span>
+                <select id="alarm-level">
+                  <option value="default">Delikatny</option>
+                  <option value="urgent">Pilny</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Notatka do alarmu</span>
+                <input type="text" id="alarm-note" placeholder="Oddzwoń proszę" />
+              </label>
+              <button type="button" class="danger" id="alarm-button">Wyślij alarm</button>
+            </div>
+            <div class="actions-row status-row">
+              <label class="field small">
+                <span>Twój status</span>
+                <select id="status-presence">
+                  <option value="available">Dostępny/a</option>
+                  <option value="busy">Zajęty/a</option>
+                  <option value="away">Poza klawiaturą</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Notatka statusu</span>
+                <input type="text" id="status-note" placeholder="Na spotkaniu do 16:00" />
+              </label>
+              <button type="button" class="ghost" id="status-button">Aktualizuj status</button>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

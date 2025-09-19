@@ -17,9 +17,32 @@ Repozytorium zawiera dokumentację wstępną komunikatora, który pozwala na nat
 - `docs/system_architecture.md` – proponowana architektura rozwiązania (frontend, backend, usługi w tle, przetwarzanie głosu).
 - `docs/experience_design.md` – opis zachowania widżetu, scenariuszy interakcji i przepływów alarmów.
 - `docs/development_plan.md` – plan wdrożenia, etapy projektowe oraz lista zadań na pierwsze sprinty.
-- `server/` – pierwsza implementacja mostu czasu rzeczywistego opartego o WebSockety (TypeScript + `ws`).
+- `server/` – implementacja mostu czasu rzeczywistego opartego o WebSockety (TypeScript + `ws`).
+- `client/` – interaktywny widżet z awatarem „Miku” (Vite + czysty JavaScript) prezentujący wiadomości, alarmy i statusy.
+- `start-app.sh`, `start-app.command`, `start-app.bat` – pliki typu „kliknij i uruchom”, które startują jednocześnie serwer i widżet.
 
-## Pierwszy prototyp backendu
+## Szybki start – jeden plik do uruchomienia
+
+1. **Mac / Linux** – kliknij `start-app.command` (lub w terminalu uruchom `./start-app.sh`).
+2. **Windows** – kliknij `start-app.bat`.
+
+Skrypt samodzielnie zainstaluje zależności (`server/` + `client/`), włączy most WebSocket na porcie `8080` oraz uruchomi widżet pod `http://localhost:5173`. Po chwili przeglądarka otworzy panel Miku z ustawieniami połączenia.
+
+> Zatrzymanie aplikacji następuje po zamknięciu terminala lub wciśnięciu `Ctrl + C` w oknie z uruchomionymi procesami.
+
+## Prototyp widżetu z awatarem
+
+Folder `client/` zawiera graficzny panel rozmowy inspirowany dokumentacją UX:
+
+- podświetlany awatar „Miku” reagujący na połączenie oraz status partnerki,
+- historia czatu z bańkami wiadomości, potwierdzeniami odczytu i oznaczeniem kolejkowanych komunikatów,
+- przyciski wysłania wiadomości tekstowej, uruchomienia alarmu (delikatny lub pilny) i aktualizacji statusu,
+- wsparcie dla syntezy mowy – przychodzące wiadomości partnerki są odczytywane na głos wybranym głosem systemowym,
+- wizualne oraz dźwiękowe powiadomienie o alarmie (sygnał audio + wibracje, jeśli urządzenie je obsługuje).
+
+Widżet łączy się z serwerem po podaniu `pairId` (identyfikatora pary) oraz `userId`. W trybie offline własne wiadomości otrzymują plakietkę „czeka na dostarczenie”, a po powrocie partnerki online pojawia się komunikat o dostarczeniu zaległych pozycji.
+
+## Prototyp backendu
 
 W katalogu `server/` znajduje się działający most komunikacyjny zgodny z opisem w dokumentacji. Obsługuje on:
 

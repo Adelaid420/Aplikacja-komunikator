@@ -22,6 +22,7 @@ Stworzenie dwukierunkowego komunikatora działającego w tle, w którym każda o
    - Mały awatar (SVG/Lottie) widoczny na telefonie i komputerze.
    - Możliwość przeciągnięcia po ekranie oraz przypięcia do rogu.
    - Tapnięcie/kliknięcie otwiera okno rozmowy.
+   - Prototyp webowy (`client/`) prezentuje układ docelowego panelu i logikę alarmu/głosu.
 
 2. **Wiadomości tekstowe**
    - Wysyłanie i odbieranie w czasie rzeczywistym (WebSockety).

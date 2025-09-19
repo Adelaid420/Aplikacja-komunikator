@@ -8,6 +8,7 @@
 ## Etap 1 – Podstawowy komunikator (Sprinty 1-3)
 1. **Sprint 1**
    - Projekt UI widżetu i ekranów czatu (Figma).
+   - Referencyjny prototyp webowy (`client/`) – weryfikacja przepływów i interakcji.
    - Skeleton aplikacji Flutter (Android) z modułem logowania.
    - Backend: endpointy rejestracji/logowania, parowanie użytkowników.
 2. **Sprint 2**

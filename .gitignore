@@ -2,8 +2,12 @@
 .DS_Store
 
 # Node/TypeScript build artifacts
+node_modules/
 server/node_modules/
 server/dist/
+client/node_modules/
+client/dist/
+client/.vite/
 
 # Logs
 server/npm-debug.log*
