@@ -1,0 +1,26 @@
+{
+  "name": "miku-communicator-suite",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "setup": "npm run setup:server && npm run setup:client && npm run setup:desktop",
+    "setup:server": "npm install --prefix server",
+    "setup:client": "npm install --prefix client",
+    "setup:desktop": "npm install --prefix desktop",
+    "dev": "npm run dev:desktop",
+    "dev:desktop": "concurrently -c magentaBright,cyanBright,greenBright -n SERWER,WIDZET,OKNO \"npm run dev --prefix server\" \"npm run dev --prefix client\" \"npm run dev --prefix desktop\"",
+    "dev:web": "concurrently -c magentaBright,cyanBright -n SERWER,WIDZET \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:render": "concurrently -c cyanBright,greenBright -n WIDZET,OKNO \"npm run dev --prefix client\" \"cross-env MIKU_SERVER_URL=wss://aplikacja-komunikator.onrender.com MIKU_AUTO_CONNECT=true npm run dev --prefix desktop\"",
+    "start": "npm run setup && npm run dev",
+    "start:render": "npm run setup && npm run dev:render",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "npm run build --prefix server",
+    "build:client": "npm run build --prefix client",
+    "build:desktop": "npm run build --prefix desktop",
+    "lint": "npm run lint --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3"
+  }
+}
