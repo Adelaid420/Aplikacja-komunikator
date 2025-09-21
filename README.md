@@ -61,7 +61,7 @@ Po zakończeniu procesu instalator znajdziesz w `desktop/release/Komunikator-<we
 
 > Domyślny adres serwera (`wss://aplikacja-komunikator.onrender.com`) możesz nadpisać zmiennymi środowiskowymi przed uruchomieniem Electron, np. `MIKU_SERVER_URL=wss://twoj-serwer.example npm run start:render`.
 
-> W oknie Miku znajdziesz przełącznik **„Łącz automatycznie przy uruchomieniu”**. Dane logowania (adres, ID pary, Twoje ID i imię partnera/partnerki) zapisują się lokalnie, więc przy następnym kliknięciu `Komunikator.exe` aplikacja połączy się sama.
+> W oknie Miku znajdziesz przełącznik **„Łącz automatycznie przy uruchomieniu”**. Zapamiętuję wybrany adres serwera oraz rolę (Oliwier lub Amelka), więc przy następnym kliknięciu `Komunikator.exe` aplikacja połączy się sama do pokoju `oliwier-amelka`.
 
 > Zatrzymanie aplikacji następuje po zamknięciu terminala lub wciśnięciu `Ctrl + C` w oknie z uruchomionymi procesami.
 
@@ -95,7 +95,9 @@ cd mobile/android
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Pierwsze uruchomienie na telefonie pokaże identyczny formularz konfiguracji jak w wersji webowej. Domyślnie aplikacja ustawia adres serwera Render (`wss://aplikacja-komunikator.onrender.com`) i zaznacza **„Łącz automatycznie przy uruchomieniu”**, żeby po każdym starcie telefonu most WebSocket od razu odtwarzał połączenie. Wszystkie dane (ID pary, własny identyfikator i imię partnera/partnerki) zapisują się lokalnie w pamięci aplikacji.
+Pierwsze uruchomienie na telefonie pokazuje formularz z adresem serwera oraz listą wyboru roli (Oliwier lub Amelka). Pokój `oliwier-amelka` jest ustawiony na stałe, a imię partnera/partnerki uzupełnia się automatycznie. Domyślnie aplikacja wskazuje backend Render (`wss://aplikacja-komunikator.onrender.com`) i zaznacza **„Łącz automatycznie przy uruchomieniu”**, żeby po każdym starcie telefonu most WebSocket od razu wznawiał połączenie. Wybrane dane zapisują się lokalnie w pamięci aplikacji.
+
+Wersja natywna utrzymuje łączność 24/7 dzięki dedykowanej usłudze pierwszoplanowej („Miku czuwa w tle”). Niezależnie od trybu „cichy” telefon otrzymuje głośne alerty z kanału alarmowego oraz zwykłe powiadomienia o wiadomościach – oba kanały korzystają z dźwięków o priorytecie „alarm”, aby przebić się nawet przez wyciszony dzwonek.
 
 Wersja natywna korzysta z wibracji urządzenia, aby przyciągnąć uwagę przy nowych wiadomościach i alarmach. Warstwa WebView korzysta z tego samego kodu, co desktop i web, więc funkcje alarmu, statusów, kolejkowania oraz syntezy głosu działają identycznie.
 
@@ -119,7 +121,7 @@ Folder `client/` zawiera graficzny panel rozmowy inspirowany dokumentacją UX:
 - wizualne oraz dźwiękowe powiadomienie o alarmie (sygnał audio + wibracje na telefonach i tabletach),
 - responsywny układ i manifest PWA pozwalające zainstalować widżet jako aplikację webową na telefonie.
 
-Widżet łączy się z serwerem po podaniu `pairId` (identyfikatora pary) oraz `userId`. W trybie offline własne wiadomości otrzymują plakietkę „czeka na dostarczenie”, a po powrocie partnera/partnerki online pojawia się komunikat o dostarczeniu zaległych pozycji.
+Widżet łączy się z serwerem, korzystając ze stałego pokoju `oliwier-amelka`; w formularzu wybierasz jedynie swoją rolę (`oliwier` lub `amelka`) oraz adres backendu. W trybie offline własne wiadomości otrzymują plakietkę „czeka na dostarczenie”, a po powrocie partnera/partnerki online pojawia się komunikat o dostarczeniu zaległych pozycji.
 
 ## Prototyp backendu
 

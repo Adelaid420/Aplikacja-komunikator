@@ -11,7 +11,7 @@ Poniższe instrukcje pozwalają utrzymać most WebSocket online 24/7. Każda pla
 5. Wybierz plan co najmniej **Starter** (plan Free usypia usługę po kilku minutach braku ruchu, więc nie zapewni pracy 24/7).
 6. W zakładce **Environment** dodaj `FCM_SERVER_KEY` z kluczem serwerowym Firebase Cloud Messaging.
 7. Po pierwszym wdrożeniu przetestuj `https://twoja-nazwa.onrender.com/healthz`. Odpowiedź `{"status":"ok"}` oznacza, że serwer działa.
-8. Adres WebSocket dla klienta to `wss://twoja-nazwa.onrender.com?pairId=<PAIR>&userId=<USER>`.
+8. Adres WebSocket dla klienta to `wss://twoja-nazwa.onrender.com?pairId=<PAIR>&userId=<USER>`. W udostępnionej aplikacji `pairId` jest już na stałe ustawione na `oliwier-amelka`, a `userId` przyjmuje wartość `oliwier` lub `amelka`.
 
 > Jeśli mimo wszystko korzystasz z planu Free, licz się z opóźnieniem przy pierwszym połączeniu po przerwie (instancja wybudza się 10–30 sekund). Do stałej pracy lepiej użyć płatnego planu lub platformy z opcją Always On (Railway, Fly.io, VPS).
 

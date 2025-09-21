@@ -204,6 +204,16 @@ body::before {
   box-shadow: 0 0 0 2px rgba(79, 224, 255, 0.2);
 }
 
+.field input[readonly] {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.field input[readonly]:focus {
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: none;
+}
+
 textarea {
   resize: vertical;
 }
@@ -287,10 +297,10 @@ button:not(:disabled):hover {
 }
 
 .timeline {
-  flex: 1;
-  min-height: 280px;
-  max-height: 420px;
-  overflow: auto;
+  flex: 0 0 auto;
+  min-height: 320px;
+  max-height: min(540px, 60vh);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;

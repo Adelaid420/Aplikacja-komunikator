@@ -4,4 +4,6 @@
     <string name="title_activity_main">Komunikator Miku</string>
     <string name="package_name">com.miku.communicator</string>
     <string name="custom_url_scheme">com.miku.communicator</string>
+    <string name="foreground_service_title">Komunikator aktywny</string>
+    <string name="foreground_service_message">Miku czuwa i utrzymuje połączenie w tle 24/7.</string>
 </resources>

@@ -27,6 +27,12 @@ const testVoiceButton = document.getElementById('test-voice');
 
 const STORAGE_KEY = 'komunikator-settings';
 const appDefaults = window.komunikator?.defaults ?? {};
+const FIXED_PAIR_ID = appDefaults.pairId ?? 'oliwier-amelka';
+const USER_ROLES = {
+  oliwier: { id: 'oliwier', label: 'Oliwier', partnerId: 'amelka', partnerLabel: 'Amelka' },
+  amelka: { id: 'amelka', label: 'Amelka', partnerId: 'oliwier', partnerLabel: 'Oliwier' }
+};
+const ALLOWED_USER_IDS = Object.keys(USER_ROLES);
 const PARTNER_FALLBACK_NAME = 'Partner/partnerka';
 
 const detectedPlatform = (() => {
@@ -46,6 +52,15 @@ const detectedPlatform = (() => {
 const isNativeApp = detectedPlatform !== 'web';
 if (isNativeApp) {
   document.body.classList.add('native-app');
+}
+
+const alertBridge = isNativeApp ? (window.Capacitor?.Plugins?.AlertBridge ?? null) : null;
+if (isNativeApp && alertBridge?.requestPermission) {
+  try {
+    alertBridge.requestPermission();
+  } catch (error) {
+    console.warn('Nie udało się poprosić o zgodę na powiadomienia', error);
+  }
 }
 
 const canVibrate = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
@@ -69,6 +84,69 @@ function triggerAttention(kind = 'message') {
   } catch (error) {
     console.warn('Nie udało się włączyć wibracji', error);
   }
+  if (alertBridge?.playAttention) {
+    try {
+      alertBridge.playAttention({ level: kind });
+    } catch (error) {
+      console.warn('Nie udało się odtworzyć alarmu systemowego', error);
+    }
+  }
+}
+
+function sanitizeUserId(id) {
+  if (!id) {
+    return '';
+  }
+  return ALLOWED_USER_IDS.includes(id) ? id : '';
+}
+
+function computePartnerName(userId) {
+  const role = USER_ROLES[userId];
+  return role ? role.partnerLabel : PARTNER_FALLBACK_NAME;
+}
+
+function applyUserRole(userId) {
+  const sanitized = sanitizeUserId(userId);
+  if (sanitized) {
+    const role = USER_ROLES[sanitized];
+    const partnerLabel = role.partnerLabel;
+    partnerName = partnerLabel;
+    partnerNameInput.value = partnerLabel;
+  } else {
+    partnerName = PARTNER_FALLBACK_NAME;
+    partnerNameInput.value = '';
+  }
+  currentUserId = sanitized;
+  updatePartnerUi();
+  return sanitized;
+}
+
+function notifyNative(kind, details = {}) {
+  if (!alertBridge?.showNotification) {
+    return;
+  }
+  const partnerDisplay = getPartnerDisplayName();
+  let title;
+  let body;
+  let category = 'message';
+  let level = 'message';
+
+  if (kind === 'alarm') {
+    category = 'alarm';
+    level = details.level ?? 'default';
+    const label = level === 'urgent' ? 'Alarm pilny' : 'Alarm';
+    title = `${label} od ${partnerDisplay}`;
+    body = details.note?.trim() || 'Otwórz komunikator, aby odpowiedzieć.';
+  } else {
+    title = `Nowa wiadomość od ${partnerDisplay}`;
+    body = details.content?.trim() || 'Otwórz komunikator, aby przeczytać wiadomość.';
+  }
+
+  try {
+    alertBridge.showNotification({ title, body, category, level });
+  } catch (error) {
+    console.warn('Nie udało się pokazać natywnego powiadomienia', error);
+  }
 }
 
 function loadStoredSettings() {
@@ -85,11 +163,13 @@ function loadStoredSettings() {
 }
 
 function gatherCurrentSettings(overrides = {}) {
+  const userId = sanitizeUserId(userIdInput.value.trim());
+  const derivedPartnerName = computePartnerName(userId);
   return {
     serverUrl: serverUrlInput.value.trim(),
-    pairId: pairIdInput.value.trim(),
-    userId: userIdInput.value.trim(),
-    partnerName: partnerNameInput.value.trim(),
+    pairId: FIXED_PAIR_ID,
+    userId,
+    partnerName: derivedPartnerName,
     autoConnect: autoConnectToggle.checked,
     ...overrides
   };
@@ -113,39 +193,47 @@ const fallbackServerUrl = appDefaults.serverUrl
   ?? (window.location.hostname === 'localhost' || window.location.hostname === ''
     ? 'ws://localhost:8080'
     : 'wss://aplikacja-komunikator.onrender.com');
+const storedUserId = sanitizeUserId(storedSettings.userId ?? appDefaults.userId ?? '');
 const initialSettings = {
   serverUrl: storedSettings.serverUrl ?? fallbackServerUrl,
-  pairId: storedSettings.pairId ?? appDefaults.pairId ?? '',
-  userId: storedSettings.userId ?? appDefaults.userId ?? '',
-  partnerName: storedSettings.partnerName ?? appDefaults.partnerName ?? '',
+  pairId: FIXED_PAIR_ID,
+  userId: storedUserId,
+  partnerName: computePartnerName(storedUserId),
   autoConnect: storedSettings.autoConnect ?? appDefaults.autoConnect ?? false
 };
 
 if (initialSettings.serverUrl) {
   serverUrlInput.value = initialSettings.serverUrl;
 }
-if (initialSettings.pairId) {
-  pairIdInput.value = initialSettings.pairId;
-}
+pairIdInput.value = FIXED_PAIR_ID;
+pairIdInput.readOnly = true;
+pairIdInput.setAttribute('aria-readonly', 'true');
+pairIdInput.title = 'Stały identyfikator pokoju komunikatora';
 if (initialSettings.userId) {
   userIdInput.value = initialSettings.userId;
 }
-if (initialSettings.partnerName) {
-  partnerNameInput.value = initialSettings.partnerName;
-}
+const initialPartnerValue = initialSettings.userId ? (initialSettings.partnerName ?? PARTNER_FALLBACK_NAME) : '';
+partnerNameInput.value = initialPartnerValue;
+partnerNameInput.readOnly = true;
 autoConnectToggle.checked = initialSettings.autoConnect;
 const shouldAutoConnect = initialSettings.autoConnect
-  && Boolean(initialSettings.serverUrl && initialSettings.pairId && initialSettings.userId);
+  && Boolean(initialSettings.serverUrl && initialSettings.userId);
 
 let socket = null;
 let connectionState = 'disconnected';
 let partnerOnline = false;
 let partnerPresence = { presence: 'offline', note: '' };
-let partnerName = partnerNameInput.value.trim();
-let currentUserId = userIdInput.value.trim();
+let partnerName = initialPartnerValue || PARTNER_FALLBACK_NAME;
+let currentUserId = initialSettings.userId ?? '';
 let lastPartnerMessageId = null;
 const queuedMessages = new Set();
 const messageRegistry = new Map();
+
+if (currentUserId) {
+  applyUserRole(currentUserId);
+} else {
+  updatePartnerUi();
+}
 
 function getPartnerDisplayName() {
   return partnerName || PARTNER_FALLBACK_NAME;
@@ -216,6 +304,7 @@ function renderMessage(message, direction) {
 
   if (direction === 'incoming') {
     triggerAttention('message');
+    notifyNative('message', { content: message.content ?? '' });
   }
 
   return el;
@@ -241,6 +330,7 @@ function renderAlarm(message, direction) {
 
   if (direction === 'incoming') {
     triggerAttention(message.level === 'urgent' ? 'alarm-urgent' : 'alarm');
+    notifyNative('alarm', { level: message.level, note: message.note });
   }
 
   return el;
@@ -559,12 +649,13 @@ function sendReceipt(messageId, status) {
 
 function connect() {
   const serverUrl = serverUrlInput.value.trim();
-  const pairId = pairIdInput.value.trim();
-  const userId = userIdInput.value.trim();
-  partnerName = partnerNameInput.value.trim();
+  const userId = sanitizeUserId(userIdInput.value.trim());
+  if (userId) {
+    applyUserRole(userId);
+  }
 
-  if (!serverUrl || !pairId || !userId) {
-    renderSystemEvent('Uzupełnij adres serwera, ID pary i swoje ID.');
+  if (!serverUrl || !userId) {
+    renderSystemEvent('Uzupełnij adres serwera i wybierz swoją rolę z listy.');
     return;
   }
 
@@ -574,7 +665,7 @@ function connect() {
     socket.close();
   }
 
-  const url = buildConnectionUrl(serverUrl, pairId, userId);
+  const url = buildConnectionUrl(serverUrl, FIXED_PAIR_ID, userId);
   currentUserId = userId;
   connectionState = 'connecting';
   updateConnectionUi();
@@ -608,7 +699,7 @@ function connect() {
   });
 }
 
-[serverUrlInput, pairIdInput, userIdInput, partnerNameInput].forEach((input) => {
+[serverUrlInput, userIdInput].forEach((input) => {
   input.addEventListener('change', () => {
     persistSettings();
   });
@@ -617,18 +708,18 @@ function connect() {
   });
 });
 
-partnerNameInput.addEventListener('input', () => {
-  partnerName = partnerNameInput.value.trim();
-  updatePartnerUi();
+userIdInput.addEventListener('change', () => {
+  const sanitized = applyUserRole(userIdInput.value.trim());
+  persistSettings({ userId: sanitized, partnerName: computePartnerName(sanitized) });
 });
 
 autoConnectToggle.addEventListener('change', () => {
   const next = persistSettings({ autoConnect: autoConnectToggle.checked });
   if (autoConnectToggle.checked) {
-    if (next.serverUrl && next.pairId && next.userId) {
+    if (next.serverUrl && next.userId) {
       renderSystemEvent('Automatyczne łączenie włączone – przy następnym starcie połączę się sama.');
     } else {
-      renderSystemEvent('Włączono automatyczne łączenie, uzupełnij jednak dane połączenia.');
+      renderSystemEvent('Włączono automatyczne łączenie, uzupełnij jednak adres serwera i wybierz swoją rolę.');
     }
   }
 });

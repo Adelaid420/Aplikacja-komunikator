@@ -56,14 +56,16 @@ APK w trybie debug umożliwia szybkie ręczne testy. Do publikacji w sklepie Goo
 
 ## Konfiguracja aplikacji w telefonie
 
-Po instalacji i pierwszym uruchomieniu zobaczysz formularz identyczny jak w wersji webowej. Dla wygody mobilnej ustawiliśmy:
+Po instalacji i pierwszym uruchomieniu zobaczysz formularz identyczny jak w wersji webowej – adres serwera oraz rozwijaną listę z rolami Oliwier/Amelka. Pokój `oliwier-amelka` pozostaje stały, a imię partnera/partnerki dobiera się automatycznie. Dla wygody mobilnej ustawiliśmy:
 
 - domyślny adres serwera na `wss://aplikacja-komunikator.onrender.com`,
 - automatyczne łączenie po starcie aplikacji,
 - wibracje przy nowych wiadomościach i alarmach,
+- usługa w tle utrzymująca połączenie 24/7 z powiadomieniem systemowym „Miku czuwa w tle”,
+- kanały powiadomień o wysokim priorytecie (wiadomości + alarmy grają jak budzik nawet przy wyciszonym telefonie),
 - responsywny layout obejmujący cały ekran (bez ramek, dopasowany do notcha i pasków systemowych).
 
-Dane połączenia (adres serwera, `pairId`, `userId`, imię partnera/partnerki) zapisują się lokalnie. Aby je wyczyścić, skorzystaj z ustawień aplikacji w systemie Android (`Informacje o aplikacji` → `Pamięć` → `Wyczyść pamięć`).
+Dane połączenia (adres serwera oraz wybrana rola) zapisują się lokalnie. Aby je wyczyścić, skorzystaj z ustawień aplikacji w systemie Android (`Informacje o aplikacji` → `Pamięć` → `Wyczyść pamięć`).
 
 ## Dalsze kroki rozwojowe
 

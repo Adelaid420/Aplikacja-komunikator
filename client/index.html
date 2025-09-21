@@ -29,7 +29,8 @@
             var defaults = window.komunikator.defaults || {};
             window.komunikator.defaults = Object.assign({
               autoConnect: true,
-              serverUrl: defaults.serverUrl || 'wss://aplikacja-komunikator.onrender.com'
+              serverUrl: defaults.serverUrl || 'wss://aplikacja-komunikator.onrender.com',
+              pairId: 'oliwier-amelka'
             }, defaults);
           }
         } catch (error) {
@@ -65,16 +66,20 @@
               />
             </label>
             <label class="field">
-              <span>ID pary</span>
-              <input type="text" id="pair-id" name="pairId" required spellcheck="false" placeholder="np. my-pair" />
+              <span>Stały pokój Oliwier ↔ Amelka</span>
+              <input type="text" id="pair-id" name="pairId" readonly spellcheck="false" value="oliwier-amelka" />
             </label>
             <label class="field">
-              <span>Twoje ID</span>
-              <input type="text" id="user-id" name="userId" required spellcheck="false" placeholder="np. ja" />
+              <span>Wybierz swoją rolę</span>
+              <select id="user-id" name="userId" required>
+                <option value="">— wybierz —</option>
+                <option value="oliwier">Oliwier</option>
+                <option value="amelka">Amelka</option>
+              </select>
             </label>
             <label class="field">
-              <span>Imię partnera/partnerki</span>
-              <input type="text" id="partner-name" name="partnerName" placeholder="np. Amelia" />
+              <span>Imię partnera/partnerki (ustawiane automatycznie)</span>
+              <input type="text" id="partner-name" name="partnerName" readonly placeholder="Oliwier / Amelka" />
             </label>
             <label class="toggle auto-connect">
               <input type="checkbox" id="auto-connect" />
