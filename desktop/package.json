@@ -1,0 +1,41 @@
+{
+  "name": "komunikator-miku-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development electron .",
+    "build": "npm run prepare && electron-builder",
+    "prepare": "npm run build:client && npm run copy:renderer",
+    "build:client": "npm run build --prefix ../client",
+    "copy:renderer": "node ./scripts/copyRenderer.mjs"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^28.2.0",
+    "electron-builder": "^24.6.5"
+  },
+  "build": {
+    "appId": "com.miku.communicator",
+    "productName": "Komunikator Miku",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "artifactName": "Komunikator-${version}-Setup.${ext}"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"]
+    }
+  }
+}
