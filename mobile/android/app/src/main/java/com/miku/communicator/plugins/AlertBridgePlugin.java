@@ -20,7 +20,7 @@ import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.getcapacitor.annotation.PermissionAlias;
+import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import com.getcapacitor.annotation.PluginMethod;
 import com.miku.communicator.MainActivity;
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @CapacitorPlugin(
   name = "AlertBridge",
   permissions = {
-    @PermissionAlias(name = "notifications", strings = { Manifest.permission.POST_NOTIFICATIONS })
+    @Permission(alias = "notifications", strings = { Manifest.permission.POST_NOTIFICATIONS })
   }
 )
 public class AlertBridgePlugin extends Plugin {
