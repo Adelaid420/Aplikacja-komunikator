@@ -1,0 +1,20 @@
+{
+  "name": "miku-communicator-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "sync": "cap sync android",
+    "copy": "cap copy android",
+    "open": "cap open android",
+    "fetch:gradle-wrapper": "node ./scripts/fetch-gradle-wrapper.mjs",
+    "postinstall": "node ./scripts/fetch-gradle-wrapper.mjs --allow-failure"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/core": "^6.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0",
+    "typescript": "^5.9.2"
+  }
+}

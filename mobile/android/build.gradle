@@ -1,0 +1,71 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.1'
+        classpath 'com.google.gms:google-services:4.4.0'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+apply from: "variables.gradle"
+
+def capacitorAndroidDir = file("../node_modules/@capacitor/android/capacitor")
+def npmWorkingDir = file("..")
+
+tasks.register("ensureCapacitorAndroid") {
+    description = "Installs the Capacitor Android sources via npm if they are missing."
+    group = "capacitor"
+
+    outputs.upToDateWhen { capacitorAndroidDir.exists() }
+
+    doLast {
+        if (capacitorAndroidDir.exists()) {
+            return
+        }
+
+        logger.lifecycle("Capacitor Android sources not found. Running 'npm install' in ${npmWorkingDir} ...")
+
+        def isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
+        def npmCommand = isWindows ? ["cmd", "/c", "npm", "install"] : ["npm", "install"]
+
+        try {
+            exec {
+                workingDir = npmWorkingDir
+                commandLine npmCommand
+            }
+        } catch (Exception ex) {
+            throw new GradleException("Failed to install Capacitor Android dependencies. Run 'npm install --prefix mobile' manually.", ex)
+        }
+
+        if (!capacitorAndroidDir.exists()) {
+            throw new GradleException(
+                "Capacitor Android sources are still missing after running npm install. Check the npm output above."
+            )
+        }
+    }
+}
+
+subprojects {
+    tasks.matching { it.name == "preBuild" }.configureEach {
+        dependsOn(rootProject.tasks.named("ensureCapacitorAndroid"))
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
