@@ -17,6 +17,48 @@ buildscript {
 
 apply from: "variables.gradle"
 
+def capacitorAndroidDir = file("../node_modules/@capacitor/android/capacitor")
+def npmWorkingDir = file("..")
+
+tasks.register("ensureCapacitorAndroid") {
+    description = "Installs the Capacitor Android sources via npm if they are missing."
+    group = "capacitor"
+
+    outputs.upToDateWhen { capacitorAndroidDir.exists() }
+
+    doLast {
+        if (capacitorAndroidDir.exists()) {
+            return
+        }
+
+        logger.lifecycle("Capacitor Android sources not found. Running 'npm install' in ${npmWorkingDir} ...")
+
+        def isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
+        def npmCommand = isWindows ? ["cmd", "/c", "npm", "install"] : ["npm", "install"]
+
+        try {
+            exec {
+                workingDir = npmWorkingDir
+                commandLine npmCommand
+            }
+        } catch (Exception ex) {
+            throw new GradleException("Failed to install Capacitor Android dependencies. Run 'npm install --prefix mobile' manually.", ex)
+        }
+
+        if (!capacitorAndroidDir.exists()) {
+            throw new GradleException(
+                "Capacitor Android sources are still missing after running npm install. Check the npm output above."
+            )
+        }
+    }
+}
+
+subprojects {
+    tasks.matching { it.name == "preBuild" }.configureEach {
+        dependsOn(rootProject.tasks.named("ensureCapacitorAndroid"))
+    }
+}
+
 allprojects {
     repositories {
         google()
