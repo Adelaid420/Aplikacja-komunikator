@@ -353,6 +353,15 @@ wss.on('connection', (socket, req) => {
         });
         break;
       }
+      case 'heartbeat': {
+        sendJson(socket, {
+          type: 'system',
+          event: 'heartbeat',
+          pairId,
+          timestamp
+        });
+        break;
+      }
       case 'status': {
         const outbound: OutboundMessage = {
           type: 'status',

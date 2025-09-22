@@ -13,6 +13,10 @@ export const inboundMessageSchema = z.discriminatedUnion('type', [
     timestamp: z.number().optional()
   }),
   z.object({
+    type: z.literal('heartbeat'),
+    timestamp: z.number().optional()
+  }),
+  z.object({
     type: z.literal('alarm'),
     level: z.enum(['default', 'urgent']).default('default'),
     note: z.string().optional()
@@ -54,6 +58,13 @@ type SystemQueueFlushedMessage = {
   delivered: number;
 };
 
+type SystemHeartbeatMessage = {
+  type: 'system';
+  event: 'heartbeat';
+  pairId: string;
+  timestamp: number;
+};
+
 export type OutboundMessage =
   | { type: 'text'; from: string; content: string; id: string; timestamp: number }
   | { type: 'alarm'; from: string; level: 'default' | 'urgent'; note?: string; timestamp: number }
@@ -62,6 +73,7 @@ export type OutboundMessage =
   | SystemConnectedMessage
   | SystemQueuedMessage
   | SystemQueueFlushedMessage
+  | SystemHeartbeatMessage
   | { type: 'error'; message: string };
 
 export function safeParseJson(payload: string): unknown | undefined {

@@ -24,6 +24,9 @@ const voiceToggle = document.getElementById('voice-enabled');
 const voiceSelect = document.getElementById('voice-select');
 const voiceSupportLabel = document.getElementById('voice-support');
 const testVoiceButton = document.getElementById('test-voice');
+const avatarCircleEl = document.querySelector('.avatar-circle');
+const avatarGlowEl = document.querySelector('.avatar-glow');
+const avatarPupils = Array.from(document.querySelectorAll('.avatar-eye .avatar-pupil'));
 
 const STORAGE_KEY = 'komunikator-settings';
 const appDefaults = window.komunikator?.defaults ?? {};
@@ -74,6 +77,11 @@ const attentionPatterns = {
   'alarm-urgent': [220, 140, 240, 140, 360]
 };
 
+const HEARTBEAT_INTERVAL_MS = 30000;
+const HEARTBEAT_TIMEOUT_MS = 90000;
+const MIN_RECONNECT_DELAY_MS = 2000;
+const MAX_RECONNECT_DELAY_MS = 60000;
+
 function triggerAttention(kind = 'message') {
   if (!allowAttentionFeedback) {
     return;
@@ -91,6 +99,99 @@ function triggerAttention(kind = 'message') {
       console.warn('Nie udało się odtworzyć alarmu systemowego', error);
     }
   }
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function scheduleIdleEyes() {
+  if (idleTimeoutId) {
+    clearTimeout(idleTimeoutId);
+  }
+  idleTimeoutId = setTimeout(() => {
+    if (idleIntervalId) {
+      return;
+    }
+    idleIntervalId = setInterval(() => {
+      const randomX = (Math.random() * 2 - 1) * 12;
+      const randomY = (Math.random() * 2 - 1) * 8;
+      pupilTarget.x = randomX;
+      pupilTarget.y = randomY;
+    }, 3800);
+  }, 4200);
+}
+
+function cancelIdleEyes() {
+  if (idleTimeoutId) {
+    clearTimeout(idleTimeoutId);
+    idleTimeoutId = null;
+  }
+  if (idleIntervalId) {
+    clearInterval(idleIntervalId);
+    idleIntervalId = null;
+  }
+}
+
+function updatePupilAnimation() {
+  const ease = 0.18;
+  pupilPosition.x += (pupilTarget.x - pupilPosition.x) * ease;
+  pupilPosition.y += (pupilTarget.y - pupilPosition.y) * ease;
+  avatarPupils.forEach((pupil, index) => {
+    const offsetX = pupilPosition.x + (index === 0 ? -1 : 1);
+    pupil.style.transform = `translate(${offsetX}px, ${pupilPosition.y}px)`;
+  });
+  avatarAnimationFrameId = requestAnimationFrame(updatePupilAnimation);
+}
+
+function lookAtPoint(clientX, clientY) {
+  if (!avatarCircleEl) {
+    return;
+  }
+  cancelIdleEyes();
+  const rect = avatarCircleEl.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const dx = clientX - centerX;
+  const dy = clientY - centerY;
+  const maxOffset = rect.width * 0.12;
+  const distance = Math.hypot(dx, dy);
+  const clampedDistance = clamp(distance, 0, rect.width);
+  const ratio = clampedDistance === 0 ? 0 : clamp(clampedDistance / (rect.width / 2), 0, 1);
+  const angle = Math.atan2(dy, dx);
+  pupilTarget.x = Math.cos(angle) * maxOffset * ratio;
+  pupilTarget.y = Math.sin(angle) * maxOffset * clamp(ratio, 0, 0.8);
+  scheduleIdleEyes();
+}
+
+function resetEyes() {
+  pupilTarget.x = 0;
+  pupilTarget.y = 0;
+  scheduleIdleEyes();
+}
+
+function initAvatarEyes() {
+  if (!avatarCircleEl || avatarPupils.length === 0) {
+    return;
+  }
+  if (avatarAnimationFrameId === null) {
+    avatarAnimationFrameId = requestAnimationFrame(updatePupilAnimation);
+  }
+  scheduleIdleEyes();
+
+  if (pointerFine) {
+    window.addEventListener('pointermove', (event) => {
+      lookAtPoint(event.clientX, event.clientY);
+    });
+    window.addEventListener('pointerleave', resetEyes);
+  }
+
+  window.addEventListener('blur', resetEyes);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      resetEyes();
+    }
+  });
 }
 
 function sanitizeUserId(id) {
@@ -228,6 +329,21 @@ let currentUserId = initialSettings.userId ?? '';
 let lastPartnerMessageId = null;
 const queuedMessages = new Set();
 const messageRegistry = new Map();
+let stayOnline = isNativeApp || shouldAutoConnect;
+let manualDisconnect = false;
+let reconnectTimer = null;
+let reconnectDelayMs = MIN_RECONNECT_DELAY_MS;
+let reconnectNoticeShown = false;
+let heartbeatIntervalId = null;
+let lastHeartbeatAck = Date.now();
+let idleTimeoutId = null;
+let idleIntervalId = null;
+let avatarAnimationFrameId = null;
+const pointerFine = typeof window !== 'undefined'
+  && typeof window.matchMedia === 'function'
+  && window.matchMedia('(pointer: fine)').matches;
+const pupilTarget = { x: 0, y: 0 };
+const pupilPosition = { x: 0, y: 0 };
 
 if (currentUserId) {
   applyUserRole(currentUserId);
@@ -360,6 +476,14 @@ function updateConnectionUi() {
       break;
     default:
       connectionStateEl.textContent = 'Niepołączono';
+  }
+
+  if (avatarCircleEl) {
+    avatarCircleEl.classList.toggle('connected', connectionState === 'connected');
+    avatarCircleEl.classList.toggle('connecting', connectionState === 'connecting');
+  }
+  if (avatarGlowEl) {
+    avatarGlowEl.classList.toggle('connected', connectionState === 'connected');
   }
 
   connectButton.textContent = connectionState === 'connected' ? 'Rozłącz' : 'Połącz';
@@ -567,6 +691,8 @@ function handleIncoming(raw) {
       renderSystemEvent(`${getPartnerDisplayName()} jest offline – wiadomość została zapisana.`);
     } else if (payload.event === 'queue_flushed') {
       clearQueueState(payload.delivered);
+    } else if (payload.event === 'heartbeat') {
+      lastHeartbeatAck = Date.now();
     }
     return;
   }
@@ -647,7 +773,66 @@ function sendReceipt(messageId, status) {
   }
 }
 
-function connect() {
+function clearReconnectTimer() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  reconnectDelayMs = MIN_RECONNECT_DELAY_MS;
+  reconnectNoticeShown = false;
+}
+
+function scheduleReconnect() {
+  if (manualDisconnect) {
+    return;
+  }
+  if (!(stayOnline || autoConnectToggle.checked)) {
+    return;
+  }
+  if (reconnectTimer) {
+    return;
+  }
+  const delay = reconnectDelayMs;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connect(true);
+  }, delay);
+  reconnectDelayMs = Math.min(Math.floor(reconnectDelayMs * 1.8), MAX_RECONNECT_DELAY_MS);
+  if (!reconnectNoticeShown) {
+    renderSystemEvent(`Połączenie przerwane – kolejna próba za ${Math.round(delay / 1000)} s.`);
+    reconnectNoticeShown = true;
+  }
+}
+
+function startHeartbeat() {
+  stopHeartbeat();
+  lastHeartbeatAck = Date.now();
+  heartbeatIntervalId = setInterval(() => {
+    if (!ensureSocketReady()) {
+      return;
+    }
+    const now = Date.now();
+    if (now - lastHeartbeatAck > HEARTBEAT_TIMEOUT_MS) {
+      renderSystemEvent('Brak odpowiedzi serwera – ponawiam połączenie.');
+      socket?.close();
+      return;
+    }
+    try {
+      socket.send(JSON.stringify({ type: 'heartbeat', timestamp: now }));
+    } catch (error) {
+      console.warn('Nie udało się wysłać sygnału podtrzymania połączenia', error);
+    }
+  }, HEARTBEAT_INTERVAL_MS);
+}
+
+function stopHeartbeat() {
+  if (heartbeatIntervalId) {
+    clearInterval(heartbeatIntervalId);
+    heartbeatIntervalId = null;
+  }
+}
+
+function connect(isReconnect = false) {
   const serverUrl = serverUrlInput.value.trim();
   const userId = sanitizeUserId(userIdInput.value.trim());
   if (userId) {
@@ -655,34 +840,52 @@ function connect() {
   }
 
   if (!serverUrl || !userId) {
-    renderSystemEvent('Uzupełnij adres serwera i wybierz swoją rolę z listy.');
+    if (!isReconnect) {
+      renderSystemEvent('Uzupełnij adres serwera i wybierz swoją rolę z listy.');
+    }
     return;
   }
 
+  stayOnline = true;
+  manualDisconnect = false;
   persistSettings();
+  clearReconnectTimer();
 
   if (socket) {
-    socket.close();
+    try {
+      socket.close();
+    } catch (error) {
+      console.warn('Nie udało się zamknąć poprzedniego połączenia', error);
+    }
   }
 
   const url = buildConnectionUrl(serverUrl, FIXED_PAIR_ID, userId);
   currentUserId = userId;
   connectionState = 'connecting';
   updateConnectionUi();
-  renderSystemEvent('Łączenie z mostem komunikacyjnym…');
+  renderSystemEvent(isReconnect ? 'Przywracam połączenie z mostem komunikacyjnym…' : 'Łączenie z mostem komunikacyjnym…');
 
   socket = new WebSocket(url);
 
   socket.addEventListener('open', () => {
     connectionState = 'connected';
+    stayOnline = true;
+    manualDisconnect = false;
+    reconnectDelayMs = MIN_RECONNECT_DELAY_MS;
+    clearReconnectTimer();
     updateConnectionUi();
+    lastHeartbeatAck = Date.now();
+    startHeartbeat();
+    renderSystemEvent('Kanał Miku jest aktywny 24/7.');
   });
 
   socket.addEventListener('message', (event) => {
     handleIncoming(event.data);
   });
 
-  socket.addEventListener('close', () => {
+  socket.addEventListener('close', (event) => {
+    stopHeartbeat();
+    socket = null;
     connectionState = 'disconnected';
     partnerOnline = false;
     partnerPresence = { presence: 'offline', note: '' };
@@ -691,10 +894,18 @@ function connect() {
     setLastPartnerMessage(null);
     updateConnectionUi();
     updatePartnerUi();
-    renderSystemEvent('Połączenie zostało zamknięte.');
+    if (manualDisconnect) {
+      renderSystemEvent('Połączenie zostało rozłączone.');
+      clearReconnectTimer();
+    } else {
+      const reason = event.wasClean ? 'zakończone przez serwer' : 'przerwane';
+      renderSystemEvent(`Połączenie ${reason}.`);
+      scheduleReconnect();
+    }
   });
 
-  socket.addEventListener('error', () => {
+  socket.addEventListener('error', (error) => {
+    console.warn('Błąd połączenia WebSocket', error);
     renderSystemEvent('⚠️ Błąd połączenia WebSocket.');
   });
 }
@@ -715,18 +926,30 @@ userIdInput.addEventListener('change', () => {
 
 autoConnectToggle.addEventListener('change', () => {
   const next = persistSettings({ autoConnect: autoConnectToggle.checked });
+  const ready = Boolean(next.serverUrl && next.userId);
+  stayOnline = autoConnectToggle.checked || isNativeApp;
   if (autoConnectToggle.checked) {
-    if (next.serverUrl && next.userId) {
-      renderSystemEvent('Automatyczne łączenie włączone – przy następnym starcie połączę się sama.');
+    manualDisconnect = false;
+    if (ready) {
+      renderSystemEvent('Automatyczne łączenie włączone – Miku będzie czuwać w tle.');
+      if (connectionState !== 'connected') {
+        connect(true);
+      }
     } else {
       renderSystemEvent('Włączono automatyczne łączenie, uzupełnij jednak adres serwera i wybierz swoją rolę.');
     }
+  } else if (!isNativeApp) {
+    renderSystemEvent('Automatyczne łączenie wyłączone.');
   }
 });
 
 connectionForm.addEventListener('submit', (event) => {
   event.preventDefault();
   if (connectionState === 'connected') {
+    manualDisconnect = true;
+    clearReconnectTimer();
+    stopHeartbeat();
+    renderSystemEvent('Rozłączam most komunikacyjny…');
     socket?.close();
   } else {
     connect();
@@ -736,7 +959,7 @@ connectionForm.addEventListener('submit', (event) => {
 if (shouldAutoConnect) {
   setTimeout(() => {
     renderSystemEvent('Przywracam ostatnie połączenie z Miku…');
-    connect();
+    connect(true);
   }, 250);
 }
 
@@ -785,7 +1008,26 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+window.addEventListener('online', () => {
+  if (!manualDisconnect && (stayOnline || autoConnectToggle.checked) && connectionState !== 'connected') {
+    connect(true);
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (
+    document.visibilityState === 'visible'
+    && !manualDisconnect
+    && (stayOnline || autoConnectToggle.checked)
+    && connectionState === 'disconnected'
+  ) {
+    connect(true);
+  }
+});
+
+initAvatarEyes();
+
 updateConnectionUi();
 updatePartnerUi();
 
-renderSystemEvent('Witaj! Ustaw dane połączenia i kliknij „Połącz”.');
+renderSystemEvent('Witaj! Ustaw dane połączenia i kliknij „Połącz”, aby Miku czuwała 24/7.');
