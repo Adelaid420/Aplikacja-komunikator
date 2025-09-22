@@ -22,7 +22,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
-import com.getcapacitor.annotation.PluginMethod;
+import com.getcapacitor.PluginMethod;
 import com.miku.communicator.MainActivity;
 import com.miku.communicator.R;
 import com.miku.communicator.notifications.NotificationHelper;

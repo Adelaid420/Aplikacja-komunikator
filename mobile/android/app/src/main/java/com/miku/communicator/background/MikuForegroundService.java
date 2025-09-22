@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.IBinder;
 
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import com.miku.communicator.notifications.NotificationHelper;
 
@@ -20,6 +21,13 @@ public class MikuForegroundService extends Service {
   @Override
   public int onStartCommand(Intent intent, int flags, int startId) {
     return START_STICKY;
+  }
+
+  @Override
+  public void onTaskRemoved(Intent rootIntent) {
+    final Intent restartServiceIntent = new Intent(getApplicationContext(), getClass());
+    ContextCompat.startForegroundService(getApplicationContext(), restartServiceIntent);
+    super.onTaskRemoved(rootIntent);
   }
 
   @Override
