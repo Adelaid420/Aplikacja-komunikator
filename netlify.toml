@@ -4,6 +4,9 @@ publish = "client/dist"
 functions = "netlify/functions"
 edge_functions = "netlify/edge-functions"
 
+[build.environment]
+NODE_VERSION = "20"
+
 [[edge_functions]]
 function = "bridge"
 path = "/bridge*"
