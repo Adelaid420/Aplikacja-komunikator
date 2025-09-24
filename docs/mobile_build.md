@@ -4,10 +4,10 @@ Ten dokument opisuje proces spakowania istniejącego widżetu Vite do aplikacji 
 
 ## Wymagania wstępne
 
-- Node.js 18+ (repozytorium korzysta z wersji 22.x na Renderze, lokalnie wystarczy 18 lub nowsza),
+- Node.js 18+ (repozytorium korzysta z wersji 22.x na Netlify, lokalnie wystarczy 18 lub nowsza),
 - Java 17 (JDK) oraz Android SDK/Android Studio do zbudowania natywnego projektu,
 - `adb` (Android Platform Tools) jeżeli chcesz instalować APK z terminala,
-- skonfigurowany backend WebSocket – np. nasz prototyp na Renderze (`wss://aplikacja-komunikator.onrender.com`).
+- skonfigurowany backend WebSocket – np. most Edge na Netlify (`wss://aplikacja-komunikator.netlify.app/bridge`).
 
 ## Instalacja zależności
 
@@ -58,7 +58,7 @@ APK w trybie debug umożliwia szybkie ręczne testy. Do publikacji w sklepie Goo
 
 Po instalacji i pierwszym uruchomieniu zobaczysz formularz identyczny jak w wersji webowej – adres serwera oraz rozwijaną listę z rolami Oliwier/Amelka. Pokój `oliwier-amelka` pozostaje stały, a imię partnera/partnerki dobiera się automatycznie. Dla wygody mobilnej ustawiliśmy:
 
-- domyślny adres serwera na `wss://aplikacja-komunikator.onrender.com`,
+- domyślny adres serwera na `wss://aplikacja-komunikator.netlify.app/bridge`,
 - automatyczne łączenie po starcie aplikacji,
 - wibracje przy nowych wiadomościach i alarmach,
 - usługa w tle utrzymująca połączenie 24/7 z powiadomieniem systemowym „Miku czuwa w tle”,

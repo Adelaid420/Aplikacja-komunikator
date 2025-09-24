@@ -11,7 +11,7 @@ if not exist node_modules (
   call npm install || goto :error
 )
 
-call npm run start:render
+call npm run start:netlify
 if errorlevel 1 goto :error
 
 goto :eof

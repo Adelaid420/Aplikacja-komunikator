@@ -1,5 +1,3 @@
-import { OutgoingHttpHeaders } from 'node:http';
-
 type PairId = string;
 type UserId = string;
 
@@ -214,8 +212,24 @@ export type PushEvent =
       timestamp: number;
     };
 
+function readEnv(key: string): string | undefined {
+  if (typeof process !== 'undefined' && process?.env) {
+    const value = process.env[key];
+    if (value) {
+      return value;
+    }
+  }
+
+  const globalRef = globalThis as unknown as {
+    Deno?: { env?: { get?(name: string): string | undefined } };
+  };
+
+  const denoGetter = globalRef?.Deno?.env?.get;
+  return typeof denoGetter === 'function' ? denoGetter.call(globalRef.Deno?.env, key) : undefined;
+}
+
 export async function dispatchPushEvent(event: PushEvent): Promise<void> {
-  const serverKey = process.env.FCM_SERVER_KEY;
+  const serverKey = readEnv('FCM_SERVER_KEY');
   if (!serverKey) {
     return;
   }
@@ -229,7 +243,7 @@ export async function dispatchPushEvent(event: PushEvent): Promise<void> {
   await Promise.all(chunks.map((chunk) => sendFcmBatch(chunk, payload, serverKey)));
 }
 
-export function corsHeaders(origin: string | undefined): OutgoingHttpHeaders {
+export function corsHeaders(origin: string | undefined): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': origin ?? '*',
     'Access-Control-Allow-Methods': 'POST,DELETE,OPTIONS',

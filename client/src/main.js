@@ -293,7 +293,7 @@ const storedSettings = loadStoredSettings();
 const fallbackServerUrl = appDefaults.serverUrl
   ?? (window.location.hostname === 'localhost' || window.location.hostname === ''
     ? 'ws://localhost:8080'
-    : 'wss://aplikacja-komunikator.onrender.com');
+    : 'wss://aplikacja-komunikator.netlify.app/bridge');
 const storedUserId = sanitizeUserId(storedSettings.userId ?? appDefaults.userId ?? '');
 const initialSettings = {
   serverUrl: storedSettings.serverUrl ?? fallbackServerUrl,

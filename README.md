@@ -27,7 +27,7 @@ Repozytorium zawiera dokumentację wstępną komunikatora, który pozwala na nat
 1. **Mac / Linux** – kliknij `start-app.command` (lub w terminalu uruchom `./start-app.sh`).
 2. **Windows** – kliknij `start-app.bat`.
 
-Skrypt samodzielnie zainstaluje zależności (`server/`, `client/`, `desktop/`), uruchomi Vite'a dla widżetu, otworzy okno Electron i ustawi domyślny adres mostu WebSocket na `wss://aplikacja-komunikator.onrender.com`. Dzięki temu po wpisaniu pary i swojego ID oraz zaznaczeniu opcji **„Łącz automatycznie”** komunikator po kolejnych uruchomieniach sam przywróci połączenie z backendem na Renderze.
+Skrypt samodzielnie zainstaluje zależności (`server/`, `client/`, `desktop/`), uruchomi Vite'a dla widżetu, otworzy okno Electron i ustawi domyślny adres mostu WebSocket na `wss://aplikacja-komunikator.netlify.app/bridge`. Dzięki temu po wpisaniu pary i swojego ID oraz zaznaczeniu opcji **„Łącz automatycznie”** komunikator po kolejnych uruchomieniach sam przywróci połączenie z mostem hostowanym na Netlify (Edge Functions z włączonym trybem 24/7).
 
 > Jeśli chcesz wrócić do w pełni lokalnego trybu (z prototypowym serwerem WebSocket na `localhost:8080`), użyj `npm run start` lub `npm run dev` z terminala.
 
@@ -43,8 +43,8 @@ Folder `desktop/` zawiera konfigurację Electron + electron-builder. Dzięki tem
 npm run setup     # jednorazowo, instaluje zależności wszystkich modułów
 npm run dev       # startuje server + client + electron w trybie watch
 
-# wariant z gotowym backendem na Renderze (bez lokalnego serwera)
-npm run start:render
+# wariant z gotowym backendem na Netlify (bez lokalnego serwera)
+npm run start:netlify
 ```
 
 ### Budowanie instalatora `.exe`
@@ -59,7 +59,7 @@ npm run build:desktop
 
 Po zakończeniu procesu instalator znajdziesz w `desktop/release/Komunikator-<wersja>-Setup.exe`. Analogiczne artefakty powstaną dla macOS (`.dmg`) oraz Linuxa (`.AppImage`, `.deb`).
 
-> Domyślny adres serwera (`wss://aplikacja-komunikator.onrender.com`) możesz nadpisać zmiennymi środowiskowymi przed uruchomieniem Electron, np. `MIKU_SERVER_URL=wss://twoj-serwer.example npm run start:render`.
+> Domyślny adres serwera (`wss://aplikacja-komunikator.netlify.app/bridge`) możesz nadpisać zmiennymi środowiskowymi przed uruchomieniem Electron, np. `MIKU_SERVER_URL=wss://twoj-serwer.example npm run start:netlify`.
 
 > W oknie Miku znajdziesz przełącznik **„Łącz automatycznie przy uruchomieniu”**. Zapamiętuję wybrany adres serwera oraz rolę (Oliwier lub Amelka), więc przy następnym kliknięciu `Komunikator.exe` aplikacja połączy się sama do pokoju `oliwier-amelka`.
 
@@ -95,7 +95,7 @@ cd mobile/android
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Pierwsze uruchomienie na telefonie pokazuje formularz z adresem serwera oraz listą wyboru roli (Oliwier lub Amelka). Pokój `oliwier-amelka` jest ustawiony na stałe, a imię partnera/partnerki uzupełnia się automatycznie. Domyślnie aplikacja wskazuje backend Render (`wss://aplikacja-komunikator.onrender.com`) i zaznacza **„Łącz automatycznie przy uruchomieniu”**, żeby po każdym starcie telefonu most WebSocket od razu wznawiał połączenie. Wybrane dane zapisują się lokalnie w pamięci aplikacji.
+Pierwsze uruchomienie na telefonie pokazuje formularz z adresem serwera oraz listą wyboru roli (Oliwier lub Amelka). Pokój `oliwier-amelka` jest ustawiony na stałe, a imię partnera/partnerki uzupełnia się automatycznie. Domyślnie aplikacja wskazuje most Netlify (`wss://aplikacja-komunikator.netlify.app/bridge`) i zaznacza **„Łącz automatycznie przy uruchomieniu”**, żeby po każdym starcie telefonu połączenie WebSocket natychmiast wracało. Wybrane dane zapisują się lokalnie w pamięci aplikacji.
 
 Wersja natywna utrzymuje łączność 24/7 dzięki dedykowanej usłudze pierwszoplanowej („Miku czuwa w tle”). Niezależnie od trybu „cichy” telefon otrzymuje głośne alerty z kanału alarmowego oraz zwykłe powiadomienia o wiadomościach – oba kanały korzystają z dźwięków o priorytecie „alarm”, aby przebić się nawet przez wyciszony dzwonek.
 
@@ -160,25 +160,24 @@ Polecenia `/alarm urgent budzik!` lub `/status busy na spotkaniu` pozwalają zas
 
 ## Stały serwer online
 
-Aby komunikator działał 24/7, wdroż prototypowy serwer WebSocket na platformie typu PaaS (np. Render, Railway, Fly.io). Najprościej zrobić to na Renderze:
+Aby komunikator działał 24/7, wdroż most WebSocket jako Netlify Edge Function:
 
-1. Zrób forka repozytorium lub wskaż je bezpośrednio w kreatorze [Render Web Service](https://dashboard.render.com/).
-2. Jako „Build Command” ustaw `cd server && npm install && npm run build`.
-3. Jako „Start Command” ustaw `cd server && npm run start`.
-4. Wybierz plan co najmniej **Starter**, aby instancja nie usypiała się po kilku minutach braku ruchu (plan Free służy jedynie do testów).
-5. W zakładce **Environment** dodaj zmienną `FCM_SERVER_KEY` z kluczem serwerowym Firebase Cloud Messaging – backend wykorzysta ją do wysyłania powiadomień push.
-6. Po wdrożeniu sprawdź `https://twoja-nazwa.onrender.com/healthz`. Jeśli widzisz `{"status":"ok"}`, usługa działa.
+1. Utwórz projekt w [Netlify](https://app.netlify.com/) i wskaż to repozytorium (lub jego forka) jako źródło.
+2. Podczas konfiguracji pozostaw build command `npm run setup:client && npm run build:client` oraz katalog publikacji `client/dist` – Netlify wykorzysta dostarczony plik `netlify.toml`.
+3. Po pierwszym buildzie w zakładce **Edge Functions** zobaczysz funkcję `bridge`, która obsługuje WebSocket (`/bridge`), rejestrację urządzeń (`/register-device`) i health check (`/healthz`).
+4. W sekcji **Environment variables** ustaw `FCM_SERVER_KEY`, aby pushy Firebase działały również z Netlify.
+5. Włącz plan zapewniający tryb Always-On (np. Netlify Pro), dzięki czemu instancje Edge nie będą usypiane i most utrzyma połączenia bez przerwy.
+6. Po wdrożeniu przetestuj `https://twoja-nazwa.netlify.app/healthz`. Jeśli zobaczysz `{"status":"ok"}`, most działa i jest gotowy.
+7. Klienci (web, desktop, mobile) powinni wskazywać `wss://twoja-nazwa.netlify.app/bridge?pairId=<PAIR>&userId=<USER>` jako docelowy adres WebSocket.
 
-> Render w darmowym planie usypia aplikację po kilku minutach bez ruchu. Jeśli potrzebujesz działania 24/7, przełącz się na płatny plan albo skorzystaj z platformy oferującej tryb "Always On" (np. Fly.io z maszynami `shared-cpu-1x`).
-
-Analogiczne kroki znajdziesz dla Railway i Fly.io w `docs/deployment.md` wraz z instrukcjami aktualizacji oraz monitoringu.
+W `docs/deployment.md` znajdziesz dodatkowe wskazówki – m.in. jak monitorować Edge Functions oraz jak przygotować kopię zapasową na VPS.
 
 ### Powiadomienia push i praca w tle
 
 Serwer udostępnia endpoint `POST /register-device`, dzięki któremu aplikacje mobilne i desktopowe mogą zgłaszać swoje tokeny powiadomień (FCM). Przykład:
 
 ```bash
-curl -X POST "https://twoja-nazwa.onrender.com/register-device" \
+curl -X POST "https://twoja-nazwa.netlify.app/register-device" \
   -H "Content-Type: application/json" \
   -d '{
     "pairId": "my-pair",

@@ -29,7 +29,7 @@
             var defaults = window.komunikator.defaults || {};
             window.komunikator.defaults = Object.assign({
               autoConnect: true,
-              serverUrl: defaults.serverUrl || 'wss://aplikacja-komunikator.onrender.com',
+              serverUrl: defaults.serverUrl || 'wss://aplikacja-komunikator.netlify.app/bridge',
               pairId: 'oliwier-amelka'
             }, defaults);
           }
@@ -69,7 +69,7 @@
                 type="text"
                 id="server-url"
                 name="serverUrl"
-                placeholder="wss://aplikacja-komunikator.onrender.com"
+                placeholder="wss://aplikacja-komunikator.netlify.app/bridge"
                 required
                 spellcheck="false"
               />

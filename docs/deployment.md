@@ -2,18 +2,17 @@
 
 Poniższe instrukcje pozwalają utrzymać most WebSocket online 24/7. Każda platforma korzysta z tego samego kodu (`server/`) i wymaga jedynie zainstalowania zależności oraz uruchomienia kompilacji TypeScript.
 
-## Render (najprostsza opcja)
+## Netlify (Edge Functions)
 
-1. Utwórz konto na [Render](https://render.com/) i wybierz **New + > Web Service**.
-2. Podaj adres repozytorium (lub wybierz wcześniej przygotowanego forka).
-3. W polu **Build Command** wpisz `cd server && npm install && npm run build`.
-4. W polu **Start Command** wpisz `cd server && npm run start`.
-5. Wybierz plan co najmniej **Starter** (plan Free usypia usługę po kilku minutach braku ruchu, więc nie zapewni pracy 24/7).
-6. W zakładce **Environment** dodaj `FCM_SERVER_KEY` z kluczem serwerowym Firebase Cloud Messaging.
-7. Po pierwszym wdrożeniu przetestuj `https://twoja-nazwa.onrender.com/healthz`. Odpowiedź `{"status":"ok"}` oznacza, że serwer działa.
-8. Adres WebSocket dla klienta to `wss://twoja-nazwa.onrender.com?pairId=<PAIR>&userId=<USER>`. W udostępnionej aplikacji `pairId` jest już na stałe ustawione na `oliwier-amelka`, a `userId` przyjmuje wartość `oliwier` lub `amelka`.
+1. Zaloguj się do [Netlify](https://app.netlify.com/) i utwórz nową stronę na podstawie tego repozytorium.
+2. W kreatorze pozostaw build command `npm run setup:client && npm run build:client` oraz katalog publikacji `client/dist` – konfiguracja z `netlify.toml` zrobi resztę.
+3. Po pierwszym buildzie Netlify wyświetli w zakładce **Edge Functions** funkcję `bridge`, która obsługuje WebSocket (`/bridge`), endpoint `POST/DELETE /register-device` oraz `GET /healthz`.
+4. W sekcji **Site configuration → Environment variables** dodaj `FCM_SERVER_KEY`, aby backend mógł wysyłać powiadomienia Firebase.
+5. Włącz plan (np. Netlify Pro), który gwarantuje brak usypiania instancji Edge – to zapewnia stałe działanie mostu 24/7.
+6. Po wdrożeniu sprawdź `https://twoja-nazwa.netlify.app/healthz`. Odpowiedź `{"status":"ok"}` potwierdza, że funkcja działa.
+7. Klienci łączą się poprzez `wss://twoja-nazwa.netlify.app/bridge?pairId=<PAIR>&userId=<USER>`. W wersji demo `pairId` to `oliwier-amelka`, a `userId` ma wartość `oliwier` lub `amelka`.
 
-> Jeśli mimo wszystko korzystasz z planu Free, licz się z opóźnieniem przy pierwszym połączeniu po przerwie (instancja wybudza się 10–30 sekund). Do stałej pracy lepiej użyć płatnego planu lub platformy z opcją Always On (Railway, Fly.io, VPS).
+> Netlify Edge Functions startują natychmiast, ale aby uniknąć limitów darmowego planu, warto włączyć płatny plan umożliwiający stałe działanie i większy limit połączeń WebSocket.
 
 ## Railway
 
@@ -46,15 +45,15 @@ Poniższe instrukcje pozwalają utrzymać most WebSocket online 24/7. Każda pla
 
 ## Aktualizacja wdrożeń
 
-- Po zmianach w kodzie uruchom ponownie wdrożenie (Render i Railway robią to automatycznie przy każdym pushu).
+- Po zmianach w kodzie Netlify zbuduje projekt ponownie automatycznie; w pozostałych platformach możesz wywołać redeploy ręcznie.
 - Przed publikacją warto lokalnie wykonać `npm run build --prefix server` oraz `npm run lint --prefix server`.
-- Monitoruj logi (`render logs`, `railway logs`, `flyctl logs`), aby szybko wychwycić błędy połączeń.
+- Monitoruj logi (`netlify logs`, `railway logs`, `flyctl logs`), aby szybko wychwycić błędy połączeń.
 
 ## Rejestrowanie urządzeń mobilnych (push)
 
 - `POST /register-device` – rejestruje token powiadomień:
   ```bash
-  curl -X POST "https://twoja-nazwa.onrender.com/register-device" \
+  curl -X POST "https://twoja-nazwa.netlify.app/register-device" \
     -H "Content-Type: application/json" \
     -d '{
       "pairId": "my-pair",
@@ -72,7 +71,7 @@ Poniższe instrukcje pozwalają utrzymać most WebSocket online 24/7. Każda pla
 W aplikacji desktopowej i widżecie webowym możesz zmienić adres serwera na ten z chmury. Najwygodniej ustawić zmienne środowiskowe przed uruchomieniem Electron:
 
 ```bash
-MIKU_SERVER_URL=wss://twoja-nazwa.onrender.com npm run dev
+MIKU_SERVER_URL=wss://twoja-nazwa.netlify.app/bridge npm run dev
 ```
 
 Analogiczne zmienne (`MIKU_PAIR_ID`, `MIKU_USER_ID`, `MIKU_PARTNER_NAME`) ustawiają domyślne wartości formularza po stronie klienta.
