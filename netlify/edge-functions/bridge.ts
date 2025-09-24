@@ -1,4 +1,3 @@
-import { z } from 'npm:zod';
 import {
   corsHeaders,
   dispatchPushEvent,
@@ -6,41 +5,47 @@ import {
   unregisterDeviceToken
 } from '../../server/src/push.ts';
 
-const connectionParamsSchema = z.object({
-  pairId: z.string().min(1, 'pairId is required'),
-  userId: z.string().min(1, 'userId is required')
-});
+type ConnectionParams = {
+  pairId: string;
+  userId: string;
+};
 
-const inboundMessageSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('text'),
-    content: z.string().min(1, 'content must not be empty'),
-    id: z.string().optional(),
-    timestamp: z.number().optional()
-  }),
-  z.object({
-    type: z.literal('heartbeat'),
-    timestamp: z.number().optional()
-  }),
-  z.object({
-    type: z.literal('alarm'),
-    level: z.enum(['default', 'urgent']).default('default'),
-    note: z.string().optional()
-  }),
-  z.object({
-    type: z.literal('receipt'),
-    messageId: z.string().min(1, 'messageId is required'),
-    status: z.enum(['received', 'read']).default('read')
-  }),
-  z.object({
-    type: z.literal('status'),
-    presence: z.enum(['available', 'busy', 'away']),
-    note: z.string().optional()
-  })
-]);
+type TextInboundMessage = {
+  type: 'text';
+  content: string;
+  id?: string;
+  timestamp?: number;
+};
 
-type ConnectionParams = z.infer<typeof connectionParamsSchema>;
-type InboundMessage = z.infer<typeof inboundMessageSchema>;
+type HeartbeatInboundMessage = {
+  type: 'heartbeat';
+  timestamp?: number;
+};
+
+type AlarmInboundMessage = {
+  type: 'alarm';
+  level: 'default' | 'urgent';
+  note?: string;
+};
+
+type ReceiptInboundMessage = {
+  type: 'receipt';
+  messageId: string;
+  status: 'received' | 'read';
+};
+
+type StatusInboundMessage = {
+  type: 'status';
+  presence: 'available' | 'busy' | 'away';
+  note?: string;
+};
+
+type InboundMessage =
+  | TextInboundMessage
+  | HeartbeatInboundMessage
+  | AlarmInboundMessage
+  | ReceiptInboundMessage
+  | StatusInboundMessage;
 
 type PairId = string;
 type UserId = string;
@@ -166,19 +171,102 @@ function flushPendingMessages(pairId: PairId, userId: UserId): number {
   return delivered;
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
 function parseConnectionParams(url: URL): ConnectionParams | null {
-  const params = Object.fromEntries(url.searchParams.entries());
-  const parsed = connectionParamsSchema.safeParse(params);
-  return parsed.success ? parsed.data : null;
+  const pairId = url.searchParams.get('pairId');
+  const userId = url.searchParams.get('userId');
+  if (!pairId || !userId) {
+    return null;
+  }
+  return { pairId, userId };
 }
 
 function parseInboundMessage(raw: string): InboundMessage | null {
   const parsedJson = safeParseJson(raw);
-  if (parsedJson === undefined) {
+  if (!parsedJson || typeof parsedJson !== 'object') {
     return null;
   }
-  const parsed = inboundMessageSchema.safeParse(parsedJson);
-  return parsed.success ? parsed.data : null;
+
+  const record = parsedJson as Record<string, unknown>;
+  const type = record.type;
+  if (type !== 'text' && type !== 'heartbeat' && type !== 'alarm' && type !== 'receipt' && type !== 'status') {
+    return null;
+  }
+
+  switch (type) {
+    case 'text': {
+      const content = record.content;
+      if (typeof content !== 'string' || content.trim() === '') {
+        return null;
+      }
+      const message: TextInboundMessage = { type: 'text', content };
+      if (record.id !== undefined) {
+        if (typeof record.id !== 'string') {
+          return null;
+        }
+        message.id = record.id;
+      }
+      if (record.timestamp !== undefined) {
+        if (!isFiniteNumber(record.timestamp)) {
+          return null;
+        }
+        message.timestamp = record.timestamp;
+      }
+      return message;
+    }
+    case 'heartbeat': {
+      const message: HeartbeatInboundMessage = { type: 'heartbeat' };
+      if (record.timestamp !== undefined) {
+        if (!isFiniteNumber(record.timestamp)) {
+          return null;
+        }
+        message.timestamp = record.timestamp;
+      }
+      return message;
+    }
+    case 'alarm': {
+      const note = record.note;
+      if (note !== undefined && typeof note !== 'string') {
+        return null;
+      }
+      const level = record.level === 'urgent' ? 'urgent' : 'default';
+      const message: AlarmInboundMessage = { type: 'alarm', level };
+      if (typeof note === 'string') {
+        message.note = note;
+      }
+      return message;
+    }
+    case 'receipt': {
+      const messageId = record.messageId;
+      if (typeof messageId !== 'string' || messageId.trim() === '') {
+        return null;
+      }
+      let status: 'received' | 'read' = 'read';
+      if (record.status === 'received' || record.status === 'read') {
+        status = record.status;
+      }
+      return { type: 'receipt', messageId, status };
+    }
+    case 'status': {
+      const presence = record.presence;
+      if (presence !== 'available' && presence !== 'busy' && presence !== 'away') {
+        return null;
+      }
+      const message: StatusInboundMessage = { type: 'status', presence };
+      if (record.note !== undefined) {
+        if (typeof record.note !== 'string') {
+          return null;
+        }
+        message.note = record.note;
+      }
+      return message;
+    }
+  }
+
+  return null;
 }
 
 function decodeEventData(data: unknown): string | null {
