@@ -1,0 +1,22 @@
+# Global ignores
+.DS_Store
+
+# Node/TypeScript build artifacts
+node_modules/
+server/node_modules/
+server/dist/
+client/node_modules/
+client/dist/
+client/.vite/
+mobile/node_modules/
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/gradle/wrapper/gradle-wrapper.jar
+
+# Logs
+server/npm-debug.log*
+
+desktop/node_modules/
+desktop/renderer/
+desktop/release/
